@@ -164,6 +164,20 @@ class AppLocalizations {
       _isTr ? 'Arkadaşlığı Sil' : 'Remove Friend';
   String friendProfileTitle(String username) =>
       _isTr ? '$username Profili' : '$username Profile';
+  String get friendOnline => _isTr ? 'Çevrim içi' : 'Online';
+  String friendLastSeen(String time) =>
+      _isTr ? 'Son görülme: $time' : 'Last seen: $time';
+  String get friendLastSeenUnknown =>
+      _isTr ? 'Son görülme bilinmiyor' : 'Last seen unknown';
+  String get friendStatusHidden =>
+      _isTr ? 'Durum gizli' : 'Status hidden';
+  String get profileOnlineVisibility =>
+      _isTr ? 'Çevrim içi durumumu paylaş' : 'Share my online status';
+  String get profileOnlineVisibilityDesc => _isTr
+      ? 'Arkadaşların ne zaman çevrim içi olduğunuzu görebilir.'
+      : 'Let friends see when you are online or last active.';
+  String get profileOnlineVisibilityUpdated =>
+      _isTr ? 'Çevrim içi durum tercihi güncellendi' : 'Online status preference updated';
 
   // Language selection
   String get languageSelectionTitle => _isTr
@@ -240,6 +254,24 @@ class AppLocalizations {
   String get leaderboardScore => _isTr ? 'Puan' : 'Score';
   String get leaderboardRank => _isTr ? 'Sıra' : 'Rank';
   String get leaderboardYou => _isTr ? 'Sen' : 'You';
+  String get relativeJustNow =>
+      _isTr ? 'az önce' : 'just now';
+  String relativeMinutes(int minutes) => _isTr
+      ? '$minutes dakika önce'
+      : minutes == 1
+          ? '1 minute ago'
+          : '$minutes minutes ago';
+  String relativeHours(int hours) => _isTr
+      ? '$hours saat önce'
+      : hours == 1
+          ? '1 hour ago'
+          : '$hours hours ago';
+  String relativeDays(int days) => _isTr
+      ? '$days gün önce'
+      : days == 1
+          ? '1 day ago'
+          : '$days days ago';
+  String relativeDate(String formatted) => formatted;
   String performanceMessage(int percentage) {
     if (percentage >= 90) {
       return _isTr ? 'Mükemmel!' : 'Excellent!';

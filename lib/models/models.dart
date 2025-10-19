@@ -16,6 +16,9 @@ class UserModel {
   final List<String> unlockedAchievements; // Açılan rozetler
   final int passTokens;
   final int coins;
+  final bool isOnline;
+  final bool shareOnlineStatus;
+  final DateTime? lastSeen;
 
   UserModel({
     required this.id,
@@ -29,6 +32,9 @@ class UserModel {
     this.unlockedAchievements = const [],
     this.passTokens = 0,
     this.coins = 0,
+    this.isOnline = false,
+    this.shareOnlineStatus = true,
+    this.lastSeen,
   });
 
   // Seviye hesaplama (her 1000 XP = 1 level)
@@ -60,22 +66,38 @@ class UserModel {
       'unlockedAchievements': unlockedAchievements,
       'passTokens': passTokens,
       'coins': coins,
+      'isOnline': isOnline,
+      'shareOnlineStatus': shareOnlineStatus,
+      'lastSeen': lastSeen?.toIso8601String(),
     };
   }
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
+    DateTime? lastSeen;
+    final rawLastSeen = map['lastSeen'];
+    if (rawLastSeen is Timestamp) {
+      lastSeen = rawLastSeen.toDate();
+    } else if (rawLastSeen is String) {
+      lastSeen = DateTime.tryParse(rawLastSeen);
+    } else if (rawLastSeen is DateTime) {
+      lastSeen = rawLastSeen;
+    }
+
     return UserModel(
       id: map['id'] ?? '',
       username: map['username'] ?? '',
       email: map['email'] ?? '',
-      highScore: map['highScore'] ?? 0,
-      totalGamesPlayed: map['totalGamesPlayed'] ?? 0,
+      highScore: _readInt(map['highScore']),
+      totalGamesPlayed: _readInt(map['totalGamesPlayed']),
       profileImageUrl: map['profileImageUrl'],
-      experience: map['experience'] ?? 0,
-      level: map['level'] ?? 1,
+      experience: _readInt(map['experience']),
+      level: _readInt(map['level'], fallback: 1),
       unlockedAchievements: List<String>.from(map['unlockedAchievements'] ?? []),
-      passTokens: map['passTokens'] ?? 0,
-      coins: map['coins'] ?? 0,
+      passTokens: _readInt(map['passTokens']),
+      coins: _readInt(map['coins']),
+      isOnline: (map['isOnline'] ?? false) as bool,
+      shareOnlineStatus: (map['shareOnlineStatus'] ?? true) as bool,
+      lastSeen: lastSeen,
     );
   }
 
@@ -92,6 +114,9 @@ class UserModel {
     List<String>? unlockedAchievements,
     int? passTokens,
     int? coins,
+    bool? isOnline,
+    bool? shareOnlineStatus,
+    DateTime? lastSeen,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -105,7 +130,19 @@ class UserModel {
       unlockedAchievements: unlockedAchievements ?? this.unlockedAchievements,
       passTokens: passTokens ?? this.passTokens,
       coins: coins ?? this.coins,
+      isOnline: isOnline ?? this.isOnline,
+      shareOnlineStatus: shareOnlineStatus ?? this.shareOnlineStatus,
+      lastSeen: lastSeen ?? this.lastSeen,
     );
+  }
+
+  static int _readInt(dynamic value, {int fallback = 0}) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) {
+      return int.tryParse(value) ?? fallback;
+    }
+    return fallback;
   }
 }
 
@@ -421,6 +458,9 @@ class FriendSummary {
   final int level;
   final int highScore;
   final DateTime addedAt;
+  final bool isOnline;
+  final bool shareOnlineStatus;
+  final DateTime? lastSeen;
 
   const FriendSummary({
     required this.uid,
@@ -429,6 +469,9 @@ class FriendSummary {
     required this.highScore,
     required this.addedAt,
     this.photoUrl,
+    this.isOnline = false,
+    this.shareOnlineStatus = true,
+    this.lastSeen,
   });
 }
 

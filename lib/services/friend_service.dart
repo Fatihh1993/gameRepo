@@ -171,6 +171,13 @@ class FriendService {
         } else if (timestamp is String) {
           addedAt = DateTime.tryParse(timestamp) ?? DateTime.now();
         }
+        DateTime? lastSeen;
+        final rawLastSeen = data['lastSeen'];
+        if (rawLastSeen is Timestamp) {
+          lastSeen = rawLastSeen.toDate();
+        } else if (rawLastSeen is String) {
+          lastSeen = DateTime.tryParse(rawLastSeen);
+        }
         return FriendSummary(
           uid: doc.id,
           username: data['username'] ?? 'player',
@@ -182,6 +189,9 @@ class FriendService {
               : int.tryParse(data['highScore'].toString()) ?? 0,
           addedAt: addedAt,
           photoUrl: data['photoUrl'] as String?,
+          isOnline: (data['isOnline'] ?? false) as bool,
+          shareOnlineStatus: (data['shareOnlineStatus'] ?? true) as bool,
+          lastSeen: lastSeen,
         );
       }).toList();
     });
@@ -353,6 +363,16 @@ class FriendService {
 
       final currentData = currentUserSnap.data() ?? {};
       final requesterData = requesterSnap.data() ?? {};
+      final requesterShare = (requesterData['shareOnlineStatus'] ?? true) as bool;
+      final requesterIsOnline = requesterShare
+          ? (requesterData['isOnline'] ?? false) as bool
+          : false;
+      final requesterLastSeen = requesterShare ? requesterData['lastSeen'] : null;
+      final currentShare = (currentData['shareOnlineStatus'] ?? true) as bool;
+      final currentIsOnline = currentShare
+          ? (currentData['isOnline'] ?? false) as bool
+          : false;
+      final currentLastSeen = currentShare ? currentData['lastSeen'] : null;
 
       final currentFriendRef =
           currentUserRef.collection('friends').doc(requesterUid);
@@ -366,6 +386,9 @@ class FriendService {
         'level': _readInt(requesterData['currentLevel'], 1),
         'highScore': _readInt(requesterData['highScore'], 0),
         'addedAt': nowTimestamp,
+        'isOnline': requesterShare ? requesterIsOnline : false,
+        'shareOnlineStatus': requesterShare,
+        'lastSeen': requesterShare ? requesterLastSeen : null,
       });
 
       transaction.set(requesterFriendRef, {
@@ -374,6 +397,9 @@ class FriendService {
         'level': _readInt(currentData['currentLevel'], 1),
         'highScore': _readInt(currentData['highScore'], 0),
         'addedAt': nowTimestamp,
+        'isOnline': currentShare ? currentIsOnline : false,
+        'shareOnlineStatus': currentShare,
+        'lastSeen': currentShare ? currentLastSeen : null,
       });
 
       transaction.delete(requestRef);

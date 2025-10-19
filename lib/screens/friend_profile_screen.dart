@@ -5,6 +5,7 @@ import '../services/auth_service_v2.dart';
 import '../utils/app_colors.dart';
 import '../utils/language_manager.dart';
 import '../utils/static_data.dart';
+import '../utils/time_formatter.dart';
 
 class FriendProfileScreen extends StatefulWidget {
   final String friendUid;
@@ -147,7 +148,7 @@ class _FriendProfileView extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       physics: const AlwaysScrollableScrollPhysics(),
       children: [
-        _FriendHeaderCard(user: user),
+        _FriendHeaderCard(user: user, loc: loc),
         const SizedBox(height: 24),
         Text(
           loc.quickStats,
@@ -242,9 +243,11 @@ class _FriendProfileView extends StatelessWidget {
 
 class _FriendHeaderCard extends StatelessWidget {
   final UserModel user;
+  final AppLocalizations loc;
 
   const _FriendHeaderCard({
     required this.user,
+    required this.loc,
   });
 
   @override
@@ -285,6 +288,8 @@ class _FriendHeaderCard extends StatelessWidget {
                         ?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
+                  _PresenceStatusRow(user: user, loc: loc),
+                  const SizedBox(height: 12),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -309,6 +314,63 @@ class _FriendHeaderCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PresenceStatusRow extends StatelessWidget {
+  final UserModel user;
+  final AppLocalizations loc;
+
+  const _PresenceStatusRow({
+    required this.user,
+    required this.loc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    String label;
+    Color color;
+
+    if (!user.shareOnlineStatus) {
+      label = loc.friendStatusHidden;
+      color = AppColors.neutral500;
+    } else if (user.isOnline) {
+      label = loc.friendOnline;
+      color = AppColors.success;
+    } else if (user.lastSeen != null) {
+      label = loc.friendLastSeen(
+        formatRelativeTime(user.lastSeen!, loc),
+      );
+      color = AppColors.neutral600;
+    } else {
+      label = loc.friendLastSeenUnknown;
+      color = AppColors.neutral500;
+    }
+
+    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        );
+
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: textStyle,
+          ),
+        ),
+      ],
     );
   }
 }

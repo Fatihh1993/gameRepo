@@ -26,6 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final AuthServiceV2 _authService = AuthServiceV2();
   UserModel? _user;
   bool _isLoading = true;
+  bool _isUpdatingShareStatus = false;
 
   @override
   void initState() {
@@ -85,6 +86,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       (route) => false,
     );
+  }
+
+  Future<void> _toggleOnlineVisibility(bool share) async {
+    final user = _user;
+    if (user == null || _isUpdatingShareStatus) return;
+
+    final loc = AppLocalizations(widget.languageManager.currentLanguage);
+    setState(() => _isUpdatingShareStatus = true);
+
+    try {
+      await _authService.updateShareOnlineStatus(share);
+      if (!mounted) return;
+      setState(() {
+        _user = user.copyWith(
+          shareOnlineStatus: share,
+          isOnline: share ? user.isOnline : false,
+          lastSeen: DateTime.now(),
+        );
+      });
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(loc.profileOnlineVisibilityUpdated),
+            backgroundColor: AppColors.success,
+          ),
+        );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(error.toString()),
+            backgroundColor: AppColors.danger,
+          ),
+        );
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdatingShareStatus = false);
+      }
+    }
   }
 
   @override
@@ -173,6 +216,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: SwitchListTile.adaptive(
+              value: user.shareOnlineStatus,
+              onChanged: _isUpdatingShareStatus
+                  ? null
+                  : (value) => _toggleOnlineVisibility(value),
+              title: Text(loc.profileOnlineVisibility),
+              subtitle: Text(
+                loc.profileOnlineVisibilityDesc,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: AppColors.neutral600),
+              ),
+              secondary: Icon(
+                user.shareOnlineStatus
+                    ? Icons.visibility_rounded
+                    : Icons.visibility_off_rounded,
+                color: AppColors.primary,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
           ),
           const SizedBox(height: 24),

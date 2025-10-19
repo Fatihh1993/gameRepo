@@ -6,6 +6,7 @@ import '../services/friend_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/language_manager.dart';
 import '../utils/theme_manager.dart';
+import '../utils/time_formatter.dart';
 import 'friend_profile_screen.dart';
 
 class FriendsScreen extends StatefulWidget {
@@ -455,6 +456,8 @@ class _FriendTile extends StatelessWidget {
                         .bodySmall
                         ?.copyWith(color: AppColors.neutral600),
                   ),
+                  const SizedBox(height: 6),
+                  _FriendPresenceStatus(friend: friend, loc: loc),
                 ],
               ),
             ),
@@ -476,6 +479,64 @@ class _FriendTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _FriendPresenceStatus extends StatelessWidget {
+  final FriendSummary friend;
+  final AppLocalizations loc;
+
+  const _FriendPresenceStatus({
+    required this.friend,
+    required this.loc,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    String label;
+    Color color;
+
+    if (!friend.shareOnlineStatus) {
+      label = loc.friendStatusHidden;
+      color = AppColors.neutral500;
+    } else if (friend.isOnline) {
+      label = loc.friendOnline;
+      color = AppColors.success;
+    } else if (friend.lastSeen != null) {
+      label = loc.friendLastSeen(
+        formatRelativeTime(friend.lastSeen!, loc),
+      );
+      color = AppColors.neutral600;
+    } else {
+      label = loc.friendLastSeenUnknown;
+      color = AppColors.neutral500;
+    }
+
+    final textStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        );
+
+    return Row(
+      children: [
+        Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            label,
+            style: textStyle,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

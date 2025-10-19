@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/models.dart';
 import '../services/auth_service_v2.dart';
+import '../services/friend_service.dart';
 import '../services/mission_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/language_manager.dart';
@@ -29,11 +30,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final AuthServiceV2 _authService = AuthServiceV2();
   final MissionService _missionService = MissionService();
+  final FriendService _friendService = FriendService();
   UserModel? _currentUser;
   bool _isLoading = true;
   bool _isLoadingMissions = true;
   List<MissionProgress> _missions = const [];
   String? _claimingMissionId;
+  Stream<List<FriendRequest>>? _incomingRequestsStream;
 
   @override
   void initState() {
@@ -68,6 +71,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted) return;
 
     setState(() {
+      _incomingRequestsStream ??=
+          _friendService.watchIncomingRequests(uid: user.uid);
       _currentUser = profile ??
           UserModel(
             id: user.uid,
@@ -517,24 +522,34 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.people_alt_rounded),
-                    label: Text(loc.friendsTitle),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      minimumSize: const Size.fromHeight(52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => FriendsScreen(
-                            themeManager: widget.themeManager,
-                            languageManager: widget.languageManager,
+                  child: StreamBuilder<List<FriendRequest>>(
+                    stream: _incomingRequestsStream,
+                    builder: (context, snapshot) {
+                      final pendingCount = snapshot.data?.length ?? 0;
+                      final friendsLabel = pendingCount > 0
+                          ? '${loc.friendsTitle} ($pendingCount)'
+                          : loc.friendsTitle;
+
+                      return FilledButton.icon(
+                        icon: const Icon(Icons.people_alt_rounded),
+                        label: Text(friendsLabel),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          minimumSize: const Size.fromHeight(52),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => FriendsScreen(
+                                themeManager: widget.themeManager,
+                                languageManager: widget.languageManager,
+                              ),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),

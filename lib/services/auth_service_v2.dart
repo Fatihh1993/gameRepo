@@ -69,6 +69,9 @@ class AuthServiceV2 {
           'unlockedAchievements': [],
           'passTokens': 0,
           'coins': 0,
+          'isOnline': false,
+          'shareOnlineStatus': true,
+          'lastSeen': FieldValue.serverTimestamp(),
           'createdAt': FieldValue.serverTimestamp(),
         });
         usersCollectionSuccess = true;
@@ -203,22 +206,99 @@ class AuthServiceV2 {
         return null;
       }
 
-      final data = doc.data()!;
-      return UserModel(
-        id: uid,
-        username: data['username'] ?? '',
-        email: data['email'] ?? '',
-        experience: data['experience'] ?? 0,
-        level: data['currentLevel'] ?? 1,
-        highScore: data['highScore'] ?? 0,
-        totalGamesPlayed: data['totalGamesPlayed'] ?? 0,
-        unlockedAchievements: List<String>.from(data['unlockedAchievements'] ?? []),
-        passTokens: data['passTokens'] ?? 0,
-        coins: data['coins'] ?? 0,
-      );
+      final data = Map<String, dynamic>.from(doc.data()!);
+      data['id'] = uid;
+      data['level'] ??= data['currentLevel'];
+      return UserModel.fromMap(data);
     } catch (e) {
       print('❌ Profil getirme hatası: $e');
       return null;
+    }
+  }
+
+  Future<void> updatePresence({required bool isOnline}) async {
+    final user = currentUser;
+    if (user == null) return;
+
+    final userRef = _firestore.collection('users').doc(user.uid);
+
+    try {
+      final userSnapshot = await userRef.get();
+      if (!userSnapshot.exists) return;
+
+      final data = userSnapshot.data() ?? {};
+      final bool share = (data['shareOnlineStatus'] ?? true) as bool;
+      final friendsSnapshot = await userRef.collection('friends').get();
+      final batch = _firestore.batch();
+      final timestamp = FieldValue.serverTimestamp();
+
+      batch.set(userRef, {
+        'isOnline': share ? isOnline : false,
+        'lastSeen': timestamp,
+      }, SetOptions(merge: true));
+
+      for (final doc in friendsSnapshot.docs) {
+        final friendUid = doc.id;
+        final friendRef = _firestore
+            .collection('users')
+            .doc(friendUid)
+            .collection('friends')
+            .doc(user.uid);
+
+        batch.set(friendRef, {
+          'isOnline': share ? isOnline : false,
+          'lastSeen': share ? timestamp : null,
+          'shareOnlineStatus': share,
+        }, SetOptions(merge: true));
+      }
+
+      await batch.commit();
+    } catch (e) {
+      print('❌ Çevrim içi durumu güncellenemedi: $e');
+    }
+  }
+
+  Future<void> updateShareOnlineStatus(bool share) async {
+    final user = currentUser;
+    if (user == null) return;
+
+    final userRef = _firestore.collection('users').doc(user.uid);
+
+    try {
+      final userSnapshot = await userRef.get();
+      if (!userSnapshot.exists) return;
+
+      final data = userSnapshot.data() ?? {};
+      final bool currentOnline = (data['isOnline'] ?? false) as bool;
+      final friendsSnapshot = await userRef.collection('friends').get();
+      final batch = _firestore.batch();
+      final timestamp = FieldValue.serverTimestamp();
+
+      batch.set(userRef, {
+        'shareOnlineStatus': share,
+        'isOnline': share ? currentOnline : false,
+        'lastSeen': timestamp,
+      }, SetOptions(merge: true));
+
+      for (final doc in friendsSnapshot.docs) {
+        final friendUid = doc.id;
+        final friendRef = _firestore
+            .collection('users')
+            .doc(friendUid)
+            .collection('friends')
+            .doc(user.uid);
+
+        batch.set(friendRef, {
+          'shareOnlineStatus': share,
+          'isOnline': share ? currentOnline : false,
+          'lastSeen': share ? timestamp : null,
+        }, SetOptions(merge: true));
+      }
+
+      await batch.commit();
+    } catch (e) {
+      print('❌ Çevrim içi gizlilik ayarı güncellenemedi: $e');
+      rethrow;
     }
   }
 
@@ -488,6 +568,7 @@ class AuthServiceV2 {
 
   // 🚪 ÇIKIŞ YAP
   Future<void> signOut() async {
+    await updatePresence(isOnline: false);
     await _auth.signOut();
     print('👋 Çıkış yapıldı');
   }
