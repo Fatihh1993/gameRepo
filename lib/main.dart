@@ -1,14 +1,16 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
-import 'screens/login_screen_v2.dart';
-import 'screens/home_screen.dart';
-import 'utils/theme_manager.dart';
-import 'utils/language_manager.dart';
-import 'services/auth_service_v2.dart';
 
-void main() async {
+import 'firebase_options.dart';
+import 'screens/home_screen.dart';
+import 'screens/login_screen_v2.dart';
+import 'services/auth_service_v2.dart';
+import 'utils/app_colors.dart';
+import 'utils/language_manager.dart';
+import 'utils/theme_manager.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -31,65 +33,13 @@ class _CodeQuizGameState extends State<CodeQuizGame> {
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: Listenable.merge([_themeManager, _languageManager]),
-      builder: (context, child) {
+      builder: (context, _) {
         return MaterialApp(
           title: 'Code Quiz Game',
           debugShowCheckedModeBanner: false,
           themeMode: _themeManager.themeMode,
-          
-          // Aydınlık Tema
-          theme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF6C63FF),
-              brightness: Brightness.light,
-            ),
-            textTheme: GoogleFonts.poppinsTextTheme(),
-            scaffoldBackgroundColor: Colors.grey[50],
-            cardTheme: const CardThemeData(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(16)),
-              ),
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
-            ),
-          ),
-          
-          // Karanlık Tema
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: const Color(0xFF6C63FF),
-              brightness: Brightness.dark,
-            ),
-            textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
-            scaffoldBackgroundColor: const Color(0xFF121212),
-            cardTheme: CardThemeData(
-              elevation: 4,
-              color: const Color(0xFF1E1E1E),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(Radius.circular(16)),
-              ),
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 2,
-              ),
-            ),
-          ),
-          
+          theme: _buildLightTheme(),
+          darkTheme: _buildDarkTheme(),
           home: AuthWrapper(
             themeManager: _themeManager,
             languageManager: _languageManager,
@@ -98,13 +48,131 @@ class _CodeQuizGameState extends State<CodeQuizGame> {
       },
     );
   }
+
+  ThemeData _buildLightTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: const ColorScheme.light(
+        primary: AppColors.primary,
+        secondary: AppColors.secondary,
+        surface: AppColors.surfaceLight,
+        error: AppColors.danger,
+      ),
+      scaffoldBackgroundColor: AppColors.backgroundLight,
+      textTheme: GoogleFonts.poppinsTextTheme(),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.surfaceLight,
+        foregroundColor: AppColors.primary,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      cardTheme: const CardThemeData(
+        elevation: 3,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          elevation: 0,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          side: const BorderSide(color: AppColors.primary, width: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+      snackBarTheme: const SnackBarThemeData(
+        backgroundColor: AppColors.surfaceLight,
+        contentTextStyle: TextStyle(
+          color: AppColors.primaryDark,
+          fontWeight: FontWeight.w600,
+        ),
+        behavior: SnackBarBehavior.floating,
+        elevation: 6,
+      ),
+    );
+  }
+
+  ThemeData _buildDarkTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: const ColorScheme.dark(
+        primary: AppColors.primary,
+        secondary: AppColors.secondary,
+        surface: AppColors.surfaceDark,
+        error: AppColors.danger,
+      ),
+      scaffoldBackgroundColor: AppColors.backgroundDark,
+      textTheme: GoogleFonts.poppinsTextTheme(
+        ThemeData.dark().textTheme,
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: AppColors.surfaceDark,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: true,
+      ),
+      cardTheme: const CardThemeData(
+        color: AppColors.surfaceDark,
+        elevation: 2,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          elevation: 0,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          side: const BorderSide(color: Colors.white, width: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+      snackBarTheme: const SnackBarThemeData(
+        backgroundColor: AppColors.surfaceDark,
+        contentTextStyle: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+        behavior: SnackBarBehavior.floating,
+        elevation: 6,
+      ),
+    );
+  }
 }
 
-// Auth durumunu kontrol eden wrapper
+/// Determines whether to show the login or the home experience depending on
+/// the Firebase authentication state.
 class AuthWrapper extends StatelessWidget {
   final ThemeManager themeManager;
   final LanguageManager languageManager;
-  
+
   const AuthWrapper({
     super.key,
     required this.themeManager,
@@ -114,11 +182,10 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authService = AuthServiceV2();
-    
+
     return StreamBuilder(
       stream: authService.authStateChanges,
       builder: (context, snapshot) {
-        // Loading
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(
@@ -126,19 +193,18 @@ class AuthWrapper extends StatelessWidget {
             ),
           );
         }
-        
-        // Kullanıcı giriş yapmışsa Home, yoksa Login
+
         if (snapshot.hasData && snapshot.data != null) {
           return HomeScreen(
             themeManager: themeManager,
             languageManager: languageManager,
           );
-        } else {
-          return LoginScreenV2(
-            themeManager: themeManager,
-            languageManager: languageManager,
-          );
         }
+
+        return LoginScreenV2(
+          themeManager: themeManager,
+          languageManager: languageManager,
+        );
       },
     );
   }

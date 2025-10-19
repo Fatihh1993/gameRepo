@@ -12,11 +12,12 @@ class QuestionService {
     int? difficulty,
   }) async {
     try {
-      print('📚 Sorular getiriliyor: $language');
-      
-      Query query = _firestore
-          .collection('questions')
-          .where('language', isEqualTo: language.toLowerCase())
+      final normalizedLanguage = language.trim().toLowerCase();
+      print('📚 Sorular getiriliyor: $normalizedLanguage');
+
+    Query<Map<String, dynamic>> query = _firestore
+      .collection('questions')
+          .where('language', isEqualTo: normalizedLanguage)
           .where('isActive', isEqualTo: true);
 
       // Zorluk seviyesi filtresi
@@ -29,14 +30,34 @@ class QuestionService {
         query = query.limit(limit);
       }
 
-      final snapshot = await query.get();
-      
-      final questions = snapshot.docs
-          .map((doc) => Question.fromFirestore(
-                doc.data() as Map<String, dynamic>,
-                doc.id,
-              ))
-          .toList();
+    var snapshot = await query.get();
+
+    var questions = snapshot.docs
+      .map((doc) => Question.fromFirestore(
+        doc.data(),
+        doc.id,
+        ))
+      .toList();
+
+    // Firestore'da language field'ı farklı formatta tutulmuşsa esnek dönüşüm
+    if (questions.isEmpty) {
+    print('⚠️ Doğrudan sorguda sonuç yok. Esnek filtre uygulanıyor...');
+    final fallbackSnapshot = await _firestore
+      .collection('questions')
+      .where('isActive', isEqualTo: true)
+      .get();
+
+    questions = fallbackSnapshot.docs
+        .map((doc) => Question.fromFirestore(
+          doc.data(),
+          doc.id,
+          ))
+      .where((question) =>
+        question.language.trim().toLowerCase() == normalizedLanguage ||
+        question.language.trim().toLowerCase() ==
+          _fallbackLanguageAlias(normalizedLanguage))
+      .toList();
+    }
 
       // Karıştır (random sıralama)
       questions.shuffle();
@@ -46,6 +67,17 @@ class QuestionService {
     } catch (e) {
       print('❌ Soru getirme hatası: $e');
       return [];
+    }
+  }
+
+  String _fallbackLanguageAlias(String normalizedLanguage) {
+    switch (normalizedLanguage) {
+      case 'csharp':
+        return 'c#';
+      case 'c#':
+        return 'csharp';
+      default:
+        return normalizedLanguage;
     }
   }
 

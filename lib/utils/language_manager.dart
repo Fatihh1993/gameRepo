@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
-// 🌍 Dil yönetimi sınıfı
 class LanguageManager extends ChangeNotifier {
-  String _currentLanguage = 'tr'; // Varsayılan Türkçe
+  String _currentLanguage = 'tr';
 
   String get currentLanguage => _currentLanguage;
 
   void setLanguage(String lang) {
+    if (lang == _currentLanguage) return;
     _currentLanguage = lang;
     notifyListeners();
   }
@@ -15,228 +15,181 @@ class LanguageManager extends ChangeNotifier {
   bool get isEnglish => _currentLanguage == 'en';
 }
 
-// 🌍 Çeviri sınıfı
 class AppLocalizations {
   final String languageCode;
 
-  AppLocalizations(this.languageCode);
+  const AppLocalizations(this.languageCode);
 
-  static AppLocalizations of(BuildContext context) {
-    return AppLocalizations('tr'); // Varsayılan
+  bool get _isTr => languageCode == 'tr';
+
+  static AppLocalizations of(BuildContext context, {String fallback = 'tr'}) {
+    return AppLocalizations(fallback);
   }
 
-  // Genel
-  String get appName => _getText('appName');
-  String get welcome => _getText('welcome');
-  String get selectLanguage => _getText('selectLanguage');
-  String get turkish => _getText('turkish');
-  String get english => _getText('english');
-  String get continue_ => _getText('continue');
-  String get back => _getText('back');
-  String get yes => _getText('yes');
-  String get no => _getText('no');
-  
-  // Login Screen
-  String get login => _getText('login');
-  String get register => _getText('register');
-  String get email => _getText('email');
-  String get username => _getText('username');
-  String get password => _getText('password');
-  String get forgotPassword => _getText('forgotPassword');
-  String get dontHaveAccount => _getText('dontHaveAccount');
-  String get alreadyHaveAccount => _getText('alreadyHaveAccount');
-  String get resetPassword => _getText('resetPassword');
-  
-  // Home Screen
-  String get selectProgrammingLanguage => _getText('selectProgrammingLanguage');
-  String get profile => _getText('profile');
-  String get startQuiz => _getText('startQuiz');
-  String get level => _getText('level');
-  String get totalScore => _getText('totalScore');
-  String get totalGames => _getText('totalGames');
-  String get logout => _getText('logout');
-  
-  // Game Screen
-  String get question => _getText('question');
-  String get isThisCodeCorrect => _getText('isThisCodeCorrect');
-  String get wrong => _getText('wrong');
-  String get correct => _getText('correct');
-  String get pass => _getText('pass');
-  String get timeRemaining => _getText('timeRemaining');
-  String get seconds => _getText('seconds');
-  String get easy => _getText('easy');
-  String get medium => _getText('medium');
-  String get hard => _getText('hard');
-  String get combo => _getText('combo');
-  String get score => _getText('score');
-  String get lives => _getText('lives');
-  
-  // Result Screen
-  String get gameOver => _getText('gameOver');
-  String get congratulations => _getText('congratulations');
-  String get yourScore => _getText('yourScore');
-  String get correctAnswers => _getText('correctAnswers');
-  String get wrongAnswers => _getText('wrongAnswers');
-  String get maxCombo => _getText('maxCombo');
-  String get earnedXP => _getText('earnedXP');
-  String get playAgain => _getText('playAgain');
-  String get backToHome => _getText('backToHome');
-  
-  // Feedback Messages
-  String get correctAnswer => _getText('correctAnswer');
-  String get wrongAnswer => _getText('wrongAnswer');
-  String get timeUp => _getText('timeUp');
-  String get questionSkipped => _getText('questionSkipped');
-  String get remainingPass => _getText('remainingPass');
-  String get passRightEarned => _getText('passRightEarned');
-  String get comboLost => _getText('comboLost');
-  String get loadingQuestions => _getText('loadingQuestions');
-  String get noQuestionsFound => _getText('noQuestionsFound');
-  
-  // Difficulty
-  String get easyTime => _getText('easyTime');
-  String get mediumTime => _getText('mediumTime');
-  String get hardTime => _getText('hardTime');
+  // Common
+  String get appName => _isTr ? 'Kod Quiz Oyunu' : 'Code Quiz Game';
+  String get welcome => _isTr ? 'Hoş Geldiniz' : 'Welcome';
+  String get turkish => _isTr ? 'Türkçe' : 'Turkish';
+  String get english => _isTr ? 'İngilizce' : 'English';
+  String get cancel => _isTr ? 'İptal' : 'Cancel';
+  String get ok => _isTr ? 'Tamam' : 'OK';
+  String get send => _isTr ? 'Gönder' : 'Send';
+  String get yes => _isTr ? 'Evet' : 'Yes';
+  String get no => _isTr ? 'Hayır' : 'No';
+  String get error => _isTr ? 'Hata' : 'Error';
+  String get success => _isTr ? 'Başarılı' : 'Success';
+  String get loading => _isTr ? 'Yükleniyor...' : 'Loading...';
 
-  // Çeviri verileri
-  String _getText(String key) {
-    final Map<String, Map<String, String>> _localizedValues = {
-      'tr': {
-        'appName': 'Kod Quiz Oyunu',
-        'welcome': 'Hoş Geldiniz',
-        'selectLanguage': 'Dil Seçin',
-        'turkish': 'Türkçe',
-        'english': 'İngilizce',
-        'continue': 'Devam Et',
-        'back': 'Geri',
-        'yes': 'Evet',
-        'no': 'Hayır',
-        
-        'login': 'Giriş Yap',
-        'register': 'Kayıt Ol',
-        'email': 'E-posta',
-        'username': 'Kullanıcı Adı',
-        'password': 'Şifre',
-        'forgotPassword': 'Şifremi Unuttum',
-        'dontHaveAccount': 'Hesabınız yok mu?',
-        'alreadyHaveAccount': 'Zaten hesabınız var mı?',
-        'resetPassword': 'Şifre Sıfırla',
-        
-        'selectProgrammingLanguage': 'Programlama Dili Seçin',
-        'profile': 'Profil',
-        'startQuiz': 'Quiz Başlat',
-        'level': 'Seviye',
-        'totalScore': 'Toplam Puan',
-        'totalGames': 'Toplam Oyun',
-        'logout': 'Çıkış Yap',
-        
-        'question': 'Soru',
-        'isThisCodeCorrect': 'Bu kod doğru mu?',
-        'wrong': 'YANLIŞ',
-        'correct': 'DOĞRU',
-        'pass': 'PAS',
-        'timeRemaining': 'Kalan Süre',
-        'seconds': 'saniye',
-        'easy': 'Kolay',
-        'medium': 'Orta',
-        'hard': 'Zor',
-        'combo': 'COMBO',
-        'score': 'Puan',
-        'lives': 'Can',
-        
-        'gameOver': 'Oyun Bitti',
-        'congratulations': 'Tebrikler',
-        'yourScore': 'Puanınız',
-        'correctAnswers': 'Doğru Cevaplar',
-        'wrongAnswers': 'Yanlış Cevaplar',
-        'maxCombo': 'Maksimum Combo',
-        'earnedXP': 'Kazanılan XP',
-        'playAgain': 'Tekrar Oyna',
-        'backToHome': 'Ana Sayfaya Dön',
-        
-        'correctAnswer': 'Doğru!',
-        'wrongAnswer': 'Yanlış! Combo sıfırlandı 💔',
-        'timeUp': '⏱️ Süre doldu!',
-        'questionSkipped': '⏭️ Soru atlandı! Kalan pas hakkı:',
-        'remainingPass': 'Kalan pas hakkı',
-        'passRightEarned': '🎁 Harika! +1 PAS Hakkı Kazandınız! (Toplam:',
-        'comboLost': 'Combo sıfırlandı',
-        'loadingQuestions': 'Sorular yükleniyor...',
-        'noQuestionsFound': 'Bu dil için henüz soru eklenmemiş!',
-        
-        'easyTime': 'Kolay (30sn)',
-        'mediumTime': 'Orta (20sn)',
-        'hardTime': 'Zor (15sn)',
-      },
-      'en': {
-        'appName': 'Code Quiz Game',
-        'welcome': 'Welcome',
-        'selectLanguage': 'Select Language',
-        'turkish': 'Turkish',
-        'english': 'English',
-        'continue': 'Continue',
-        'back': 'Back',
-        'yes': 'Yes',
-        'no': 'No',
-        
-        'login': 'Login',
-        'register': 'Register',
-        'email': 'Email',
-        'username': 'Username',
-        'password': 'Password',
-        'forgotPassword': 'Forgot Password',
-        'dontHaveAccount': "Don't have an account?",
-        'alreadyHaveAccount': 'Already have an account?',
-        'resetPassword': 'Reset Password',
-        
-        'selectProgrammingLanguage': 'Select Programming Language',
-        'profile': 'Profile',
-        'startQuiz': 'Start Quiz',
-        'level': 'Level',
-        'totalScore': 'Total Score',
-        'totalGames': 'Total Games',
-        'logout': 'Logout',
-        
-        'question': 'Question',
-        'isThisCodeCorrect': 'Is this code correct?',
-        'wrong': 'WRONG',
-        'correct': 'CORRECT',
-        'pass': 'PASS',
-        'timeRemaining': 'Time Remaining',
-        'seconds': 'seconds',
-        'easy': 'Easy',
-        'medium': 'Medium',
-        'hard': 'Hard',
-        'combo': 'COMBO',
-        'score': 'Score',
-        'lives': 'Lives',
-        
-        'gameOver': 'Game Over',
-        'congratulations': 'Congratulations',
-        'yourScore': 'Your Score',
-        'correctAnswers': 'Correct Answers',
-        'wrongAnswers': 'Wrong Answers',
-        'maxCombo': 'Max Combo',
-        'earnedXP': 'Earned XP',
-        'playAgain': 'Play Again',
-        'backToHome': 'Back to Home',
-        
-        'correctAnswer': 'Correct!',
-        'wrongAnswer': 'Wrong! Combo reset 💔',
-        'timeUp': '⏱️ Time is up!',
-        'questionSkipped': '⏭️ Question skipped! Remaining passes:',
-        'remainingPass': 'Remaining passes',
-        'passRightEarned': '🎁 Great! +1 PASS Right Earned! (Total:',
-        'comboLost': 'Combo reset',
-        'loadingQuestions': 'Loading questions...',
-        'noQuestionsFound': 'No questions added for this language yet!',
-        
-        'easyTime': 'Easy (30s)',
-        'mediumTime': 'Medium (20s)',
-        'hardTime': 'Hard (15s)',
-      },
-    };
+  // Auth
+  String get login => _isTr ? 'Giriş Yap' : 'Login';
+  String get register => _isTr ? 'Kayıt Ol' : 'Register';
+  String get email => _isTr ? 'E-posta' : 'Email';
+  String get username => _isTr ? 'Kullanıcı Adı' : 'Username';
+  String get emailOrUsername =>
+      _isTr ? 'E-posta / Kullanıcı Adı' : 'Email / Username';
+  String get password => _isTr ? 'Şifre' : 'Password';
+  String get forgotPassword => _isTr ? 'Şifremi Unuttum' : 'Forgot Password';
+  String get dontHaveAccount =>
+      _isTr ? 'Hesabınız yok mu?' : "Don't have an account?";
+  String get alreadyHaveAccount =>
+      _isTr ? 'Zaten hesabınız var mı?' : 'Already have an account?';
+  String get resetPassword => _isTr ? 'Şifre Sıfırla' : 'Reset Password';
+  String get enterEmailHint =>
+      _isTr ? 'E-posta adresinizi girin' : 'Enter your email';
+  String get loginMissingCredentials => _isTr
+      ? 'Lütfen e-posta/kullanıcı adı ve şifre girin'
+      : 'Please enter email/username and password';
+  String get registerMissingFields =>
+      _isTr ? 'Lütfen tüm alanları doldurun' : 'Please fill in every field';
+  String passwordTooShort(int min) => _isTr
+      ? 'Şifre en az $min karakter olmalıdır'
+      : 'Password must be at least $min characters';
+  String get loginFailed => _isTr ? 'Giriş başarısız' : 'Login failed';
+  String get emailNotFound => _isTr
+      ? 'Bu e-posta ile kayıtlı kullanıcı bulunamadı'
+      : 'No user found with this email';
+  String get usernameNotFound => _isTr
+      ? 'Kullanıcı adı bulunamadı. Lütfen e-posta ile giriş yapın.'
+      : 'Username not found. Please try logging in with email.';
+  String get wrongCredentials => _isTr
+      ? 'Yanlış şifre veya kullanıcı bilgisi'
+      : 'Wrong password or credentials';
+  String get invalidEmail =>
+      _isTr ? 'Geçersiz e-posta formatı' : 'Invalid email format';
+  String get tooManyRequests => _isTr
+      ? 'Çok fazla deneme. Lütfen sonra tekrar deneyin.'
+      : 'Too many attempts. Please try again later.';
+  String get passwordResetSent => _isTr
+      ? 'Şifre sıfırlama bağlantısı e-postanıza gönderildi!'
+      : 'Password reset link sent to your email!';
+  String get emailAlreadyUsed =>
+      _isTr ? 'Bu e-posta zaten kullanılıyor' : 'This email is already in use';
 
-    return _localizedValues[languageCode]?[key] ?? key;
+  // Home
+  String get homeGreeting => _isTr
+      ? 'Kod bilgini keşfetmeye hazır mısın?'
+      : 'Ready to test your coding skills?';
+  String get selectProgrammingLanguage =>
+      _isTr ? 'Programlama Dili Seçin' : 'Select Programming Language';
+  String get startQuiz => _isTr ? 'Quiz Başlat' : 'Start Quiz';
+  String get profile => _isTr ? 'Profil' : 'Profile';
+  String get level => _isTr ? 'Seviye' : 'Level';
+  String get totalScore => _isTr ? 'Toplam Puan' : 'Total Score';
+  String get totalGames => _isTr ? 'Toplam Oyun' : 'Total Games';
+  String get logout => _isTr ? 'Çıkış Yap' : 'Logout';
+  String get userDataMissing =>
+      _isTr ? 'Kullanıcı verisi yüklenemedi' : 'Failed to load user data';
+  String get chooseLanguageCTA =>
+      _isTr ? 'Dil seç ve başla!' : 'Pick a language and get started!';
+  String get quickStats => _isTr ? 'Özet İstatistikler' : 'Quick Stats';
+  String get accuracy => _isTr ? 'Doğruluk' : 'Accuracy';
+  String get speed => _isTr ? 'Hız' : 'Speed';
+  String get good => _isTr ? 'İyi' : 'Good';
+  String languageQuestionCount(int count) =>
+      _isTr ? '$count Soru' : '$count Questions';
+
+  // Language selection
+  String get languageSelectionTitle => _isTr
+      ? 'Hangi dilde test olmak istersin?'
+      : 'Which language do you want to practise?';
+  String get languageSelectionSubtitle => _isTr
+      ? 'Bir programlama dili seç ve kendini test et'
+      : 'Choose a programming language and challenge yourself';
+  String get languageSelectionAppBar =>
+      _isTr ? 'Dil Seçimi' : 'Language Selection';
+
+  // Game
+  String get question => _isTr ? 'Soru' : 'Question';
+  String get isThisCodeCorrect =>
+      _isTr ? 'Bu kod doğru mu?' : 'Is this code correct?';
+  String get wrong => _isTr ? 'YANLIŞ' : 'WRONG';
+  String get correct => _isTr ? 'DOĞRU' : 'CORRECT';
+  String get pass => _isTr ? 'PAS' : 'PASS';
+  String get timeRemaining => _isTr ? 'Kalan Süre' : 'Time Remaining';
+  String get seconds => _isTr ? 'saniye' : 'seconds';
+  String get easy => _isTr ? 'Kolay' : 'Easy';
+  String get medium => _isTr ? 'Orta' : 'Medium';
+  String get hard => _isTr ? 'Zor' : 'Hard';
+  String get combo => _isTr ? 'COMBO' : 'COMBO';
+  String get score => _isTr ? 'Puan' : 'Score';
+  String get lives => _isTr ? 'Can' : 'Lives';
+  String get loadingQuestions =>
+      _isTr ? 'Sorular yükleniyor...' : 'Loading questions...';
+  String get noQuestionsFound => _isTr
+      ? 'Bu dil için henüz soru eklenmemiş!'
+      : 'No questions available for this language yet!';
+  String get timeUp => _isTr ? 'Süre doldu!' : 'Time is up!';
+  String get comboLost => _isTr ? 'Combo sıfırlandı' : 'Combo reset';
+  String passEarned(int total) => _isTr
+      ? 'Harika! +1 PAS hakkı kazandınız! (Toplam: $total)'
+      : 'Great! You earned +1 PASS! (Total: $total)';
+  String comboMessage(int comboCount, int points) => _isTr
+      ? '${comboCount}x COMBO! +$points puan'
+      : '${comboCount}x COMBO! +$points points';
+  String wrongAnswer(String explanation) =>
+      _isTr ? 'Yanlış! $explanation' : 'Wrong! $explanation';
+  String correctAnswer(String explanation) =>
+      _isTr ? 'Doğru! $explanation' : 'Correct! $explanation';
+  String timeUpWithExplanation(String explanation) =>
+      _isTr ? 'Süre doldu! $explanation' : 'Time is up! $explanation';
+  String questionSkipped(int remaining) => _isTr
+      ? 'Soru atlandı! Kalan pas hakkı: $remaining'
+      : 'Question skipped! Passes left: $remaining';
+  String timerDifficultyLabel(String difficulty, int seconds) =>
+      _isTr ? '$difficulty ($seconds sn)' : '$difficulty (${seconds}s)';
+
+  // Result
+  String get gameOver => _isTr ? 'Oyun Bitti' : 'Game Over';
+  String get congratulations => _isTr ? 'Tebrikler' : 'Congratulations';
+  String get yourScore => _isTr ? 'Puanınız' : 'Your Score';
+  String get correctAnswers => _isTr ? 'Doğru Cevaplar' : 'Correct Answers';
+  String get wrongAnswers => _isTr ? 'Yanlış Cevaplar' : 'Wrong Answers';
+  String get maxCombo => _isTr ? 'Maksimum Combo' : 'Max Combo';
+  String get earnedXP => _isTr ? 'Kazanılan XP' : 'Earned XP';
+  String get playAgain => _isTr ? 'Tekrar Oyna' : 'Play Again';
+  String get backToHome => _isTr ? 'Ana Sayfaya Dön' : 'Back to Home';
+  String get achievementsUnlocked =>
+      _isTr ? 'Yeni başarımlar açıldı!' : 'New achievements unlocked!';
+  String performanceMessage(int percentage) {
+    if (percentage >= 90) {
+      return _isTr ? 'Mükemmel!' : 'Excellent!';
+    } else if (percentage >= 70) {
+      return _isTr ? 'Harika!' : 'Great job!';
+    } else if (percentage >= 50) {
+      return _isTr ? 'İyi!' : 'Nice!';
+    }
+    return _isTr ? 'Pratik yapmaya devam!' : 'Keep practising!';
   }
+
+  // Profile
+  String get profileTitle => _isTr ? 'Profilim' : 'My Profile';
+  String get signOut => _isTr ? 'Çıkış Yap' : 'Sign Out';
+  String get signOutQuestion => _isTr
+      ? 'Çıkış yapmak istediğinize emin misiniz?'
+      : 'Are you sure you want to sign out?';
+  String get experience => _isTr ? 'Deneyim' : 'Experience';
+  String get achievements => _isTr ? 'Başarımlar' : 'Achievements';
+  String get activity => _isTr ? 'Oyun Geçmişi' : 'Game Activity';
+  String get noAchievements =>
+      _isTr ? 'Henüz başarım bulunmuyor' : 'No achievements yet';
 }

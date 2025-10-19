@@ -1,6 +1,10 @@
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../models/models.dart';
+import '../utils/static_data.dart';
 
 /// Basit ve çalışan Firebase Authentication servisi
 class AuthServiceV2 {
@@ -211,25 +215,218 @@ class AuthServiceV2 {
   }
 
   // 💾 OYUN SONUCUNU KAYDET
-  Future<void> saveGameResult({
+  Future<List<String>> saveGameResult({
     required String uid,
+    required String language,
     required int score,
     required int earnedXP,
+    required int correctAnswers,
+    required int wrongAnswers,
+    required int maxCombo,
   }) async {
     try {
       final userRef = _firestore.collection('users').doc(uid);
-      
-      await userRef.update({
-        'totalGamesPlayed': FieldValue.increment(1),
-        'experience': FieldValue.increment(earnedXP),
-        'highScore': score, // Not: Bu sadece örnek, gerçekte max() yapmalısınız
+      final newAchievements = <String>[];
+
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(userRef);
+        if (!snapshot.exists) {
+          throw Exception('Kullanıcı profili bulunamadı');
+        }
+
+        final data = snapshot.data()!;
+
+        final currentExperience = (data['experience'] ?? 0) as int;
+        final currentGames = (data['totalGamesPlayed'] ?? 0) as int;
+        final currentHighScore = (data['highScore'] ?? 0) as int;
+        final currentTotalScore = (data['totalScore'] ?? 0) as int;
+        final currentTotalCorrect = (data['totalCorrect'] ?? 0) as int;
+        final currentTotalWrong = (data['totalWrong'] ?? 0) as int;
+        final currentBestCombo = (data['bestCombo'] ?? 0) as int;
+        final currentLevel = (data['currentLevel'] ?? 1) as int;
+
+        final Set<String> languagesPlayed = {
+          for (final item in (data['languagesPlayed'] as List<dynamic>? ?? []))
+            item.toString().toLowerCase(),
+        };
+        languagesPlayed.add(language.toLowerCase());
+
+        final Set<String> unlocked = {
+          for (final item
+              in (data['unlockedAchievements'] as List<dynamic>? ?? []))
+            item.toString(),
+        };
+
+        final updatedGames = currentGames + 1;
+        final updatedExperience = currentExperience + earnedXP;
+        final updatedHighScore = max(currentHighScore, score);
+        final updatedTotalScore = currentTotalScore + score;
+        final updatedTotalCorrect = currentTotalCorrect + correctAnswers;
+        final updatedTotalWrong = currentTotalWrong + wrongAnswers;
+        final updatedBestCombo = max(currentBestCombo, maxCombo);
+        final computedLevel = max(_calculateLevel(updatedExperience), currentLevel);
+
+        final achieved = _evaluateAchievements(
+          totalGames: updatedGames,
+          highScore: updatedHighScore,
+          bestCombo: updatedBestCombo,
+          experience: updatedExperience,
+          totalCorrect: updatedTotalCorrect,
+          totalWrong: updatedTotalWrong,
+          languagesPlayed: languagesPlayed,
+          lastGameCorrect: correctAnswers,
+          lastGameWrong: wrongAnswers,
+          lastGameMaxCombo: maxCombo,
+          lastGameScore: score,
+        );
+
+        for (final achievement in achieved) {
+          if (unlocked.add(achievement)) {
+            newAchievements.add(achievement);
+          }
+        }
+
+        transaction.update(userRef, {
+          'totalGamesPlayed': updatedGames,
+          'experience': updatedExperience,
+          'highScore': updatedHighScore,
+          'totalScore': updatedTotalScore,
+          'totalCorrect': updatedTotalCorrect,
+          'totalWrong': updatedTotalWrong,
+          'bestCombo': updatedBestCombo,
+          'languagesPlayed': languagesPlayed.toList(),
+          'unlockedAchievements': unlocked.toList(),
+          'currentLevel': computedLevel,
+          'lastGameAt': FieldValue.serverTimestamp(),
+          'lastGame': {
+            'correct': correctAnswers,
+            'wrong': wrongAnswers,
+            'score': score,
+            'maxCombo': maxCombo,
+            'playedAt': FieldValue.serverTimestamp(),
+          },
+        });
       });
 
       print('✅ Oyun sonucu kaydedildi');
+      if (newAchievements.isNotEmpty) {
+        print('🏆 Yeni başarımlar: $newAchievements');
+      }
+      return newAchievements;
     } catch (e) {
       print('❌ Oyun sonucu kaydetme hatası: $e');
       rethrow;
     }
+  }
+
+  Future<List<String>> getOrSyncAchievements(String uid) async {
+    final doc = await _firestore.collection('users').doc(uid).get();
+    if (!doc.exists) {
+      return [];
+    }
+
+    final data = doc.data()!;
+
+    final totalGames = ((data['totalGamesPlayed'] ?? 0) as num).toInt();
+    final highScore = ((data['highScore'] ?? 0) as num).toInt();
+    final bestCombo = ((data['bestCombo'] ?? 0) as num).toInt();
+    final experience = ((data['experience'] ?? 0) as num).toInt();
+    final totalCorrect = ((data['totalCorrect'] ?? 0) as num).toInt();
+    final totalWrong = ((data['totalWrong'] ?? 0) as num).toInt();
+    final languagesPlayed = {
+      for (final lang in (data['languagesPlayed'] as List<dynamic>? ?? []))
+        lang.toString().toLowerCase(),
+    };
+
+    final lastGame =
+        data['lastGame'] is Map<String, dynamic> ? data['lastGame'] as Map<String, dynamic> : <String, dynamic>{};
+    final lastGameCorrect = ((lastGame['correct'] ?? 0) as num).toInt();
+    final lastGameWrong = ((lastGame['wrong'] ?? 0) as num).toInt();
+    final lastGameScore = ((lastGame['score'] ?? 0) as num).toInt();
+    final lastGameMaxCombo = ((lastGame['maxCombo'] ?? 0) as num).toInt();
+
+    final Set<String> unlocked = {
+      for (final item
+          in (data['unlockedAchievements'] as List<dynamic>? ?? []))
+        item.toString(),
+    };
+
+    final achieved = _evaluateAchievements(
+      totalGames: totalGames,
+      highScore: highScore,
+      bestCombo: bestCombo,
+      experience: experience,
+      totalCorrect: totalCorrect,
+      totalWrong: totalWrong,
+      languagesPlayed: languagesPlayed,
+      lastGameCorrect: lastGameCorrect,
+      lastGameWrong: lastGameWrong,
+      lastGameMaxCombo: lastGameMaxCombo,
+      lastGameScore: lastGameScore,
+    );
+
+    var changed = false;
+    for (final id in achieved) {
+      if (unlocked.add(id)) {
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      await doc.reference.update({'unlockedAchievements': unlocked.toList()});
+    }
+
+    return unlocked.toList();
+  }
+
+  int _calculateLevel(int experience) => (experience ~/ 1000) + 1;
+
+  Set<String> _evaluateAchievements({
+    required int totalGames,
+    required int highScore,
+    required int bestCombo,
+    required int experience,
+    required int totalCorrect,
+    required int totalWrong,
+    required Set<String> languagesPlayed,
+    required int lastGameCorrect,
+    required int lastGameWrong,
+    required int lastGameMaxCombo,
+    required int lastGameScore,
+  }) {
+    final unlocked = <String>{};
+    final level = _calculateLevel(experience);
+
+    if (totalGames >= 1) unlocked.add('first_win');
+    if (totalGames >= 10) unlocked.add('games_10');
+    if (totalGames >= 50) unlocked.add('games_50');
+
+    if (lastGameWrong == 0 && lastGameCorrect > 0) {
+      unlocked.add('perfect_game');
+    }
+
+    if (bestCombo >= 5 || lastGameMaxCombo >= 5) {
+      unlocked.add('combo_5');
+    }
+    if (bestCombo >= 10 || lastGameMaxCombo >= 10) {
+      unlocked.add('combo_10');
+    }
+
+    if (highScore >= 500 || lastGameScore >= 500) {
+      unlocked.add('high_score_500');
+    }
+    if (highScore >= 1000 || lastGameScore >= 1000) {
+      unlocked.add('high_score_1000');
+    }
+
+    if (level >= 10) unlocked.add('level_10');
+    if (level >= 25) unlocked.add('level_25');
+
+    if (languagesPlayed.length >= StaticData.languages.length) {
+      unlocked.add('all_languages');
+    }
+
+    return unlocked;
   }
 
   // 🚪 ÇIKIŞ YAP

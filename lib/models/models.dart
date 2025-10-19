@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 // Data Models
@@ -152,6 +153,14 @@ class Question {
 
   // Firestore için
   factory Question.fromFirestore(Map<String, dynamic> data, String docId) {
+    final dynamic rawCreatedAt = data['createdAt'];
+    DateTime? createdAt;
+    if (rawCreatedAt is Timestamp) {
+      createdAt = rawCreatedAt.toDate();
+    } else if (rawCreatedAt is String) {
+      createdAt = DateTime.tryParse(rawCreatedAt);
+    }
+
     return Question(
       id: docId,
       language: data['language'] ?? '',
@@ -160,9 +169,7 @@ class Question {
       explanation: data['explanation'],
       difficulty: data['difficulty'] ?? 1,
       tags: List<String>.from(data['tags'] ?? []),
-      createdAt: data['createdAt'] != null 
-          ? (data['createdAt'] as dynamic).toDate() 
-          : null,
+      createdAt: createdAt,
       isActive: data['isActive'] ?? true,
     );
   }
