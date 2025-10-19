@@ -107,6 +107,63 @@ class AppLocalizations {
   String get good => _isTr ? 'İyi' : 'Good';
   String languageQuestionCount(int count) =>
       _isTr ? '$count Soru' : '$count Questions';
+  String get missionsTitle => _isTr ? 'Görevler' : 'Missions';
+  String get noMissions =>
+      _isTr ? 'Görev bulunamadı.' : 'No missions available yet.';
+  String get missionDaily => _isTr ? 'Günlük' : 'Daily';
+  String get missionWeekly => _isTr ? 'Haftalık' : 'Weekly';
+  String missionRewardXp(int value) => '+$value XP';
+  String missionRewardPass(int value) =>
+      _isTr ? '+$value Pas' : '+$value Pass';
+  String missionRewardCoin(int value) =>
+      _isTr ? '+$value Jeton' : '+$value Coins';
+  String get inventory => _isTr ? 'Envanter' : 'Inventory';
+  String get passesLabel => _isTr ? 'Pas' : 'Passes';
+  String get coinsLabel => _isTr ? 'Jeton' : 'Coins';
+  String get missionClaim => _isTr ? 'Ödülü Al' : 'Claim Reward';
+  String get missionClaimed => _isTr ? 'Ödül Alındı' : 'Claimed';
+  String missionClaimSuccess(String reward) =>
+      _isTr ? 'Ödül kazandınız: $reward' : 'Reward earned: $reward';
+  String get missionClaimError => _isTr
+      ? 'Ödül alınamadı. Lütfen tekrar deneyin.'
+      : 'Could not claim reward. Please try again.';
+  String get passUseError => _isTr
+      ? 'Pas hakkı kullanılamadı. Lütfen tekrar deneyin.'
+      : 'Unable to use pass. Please try again.';
+  String get friendsTitle => _isTr ? 'Arkadaşlar' : 'Friends';
+  String get friendsTab => _isTr ? 'Arkadaşlar' : 'Friends';
+  String get requestsTab => _isTr ? 'İstekler' : 'Requests';
+  String get friendSearchLabel =>
+      _isTr ? 'Kullanıcı adı' : 'Username';
+  String get friendSearchHint =>
+      _isTr ? 'ör. coder_ali' : 'e.g. coder_ali';
+  String get friendSearchButton => _isTr ? 'Ara' : 'Search';
+  String get friendAddButton => _isTr ? 'Ekle' : 'Add';
+  String get friendEnterUsername =>
+      _isTr ? 'Lütfen kullanıcı adı girin' : 'Please enter a username';
+  String get friendSearchFirst =>
+      _isTr ? 'Önce kullanıcıyı arayın' : 'Search for the player first';
+  String get friendRequestSent =>
+      _isTr ? 'Arkadaşlık isteği gönderildi' : 'Friend request sent';
+  String get friendsEmpty =>
+      _isTr ? 'Henüz arkadaşın yok' : 'No friends yet';
+  String get requestsEmpty =>
+      _isTr ? 'Bekleyen istek yok' : 'No pending requests';
+  String get friendIncomingHeader =>
+      _isTr ? 'Gelen İstekler' : 'Incoming Requests';
+  String get friendOutgoingHeader =>
+      _isTr ? 'Gönderilen İstekler' : 'Sent Requests';
+  String get friendOutgoingEmpty =>
+      _isTr ? 'Gönderilmiş istek yok' : 'No sent requests yet';
+  String get friendReject => _isTr ? 'Reddet' : 'Decline';
+  String get friendAccept => _isTr ? 'Kabul Et' : 'Accept';
+  String get friendPending => _isTr ? 'Beklemede' : 'Pending';
+  String get friendViewProfile =>
+      _isTr ? 'Profili Gör' : 'View Profile';
+  String get friendRemove =>
+      _isTr ? 'Arkadaşlığı Sil' : 'Remove Friend';
+  String friendProfileTitle(String username) =>
+      _isTr ? '$username Profili' : '$username Profile';
 
   // Language selection
   String get languageSelectionTitle => _isTr
@@ -170,6 +227,19 @@ class AppLocalizations {
   String get backToHome => _isTr ? 'Ana Sayfaya Dön' : 'Back to Home';
   String get achievementsUnlocked =>
       _isTr ? 'Yeni başarımlar açıldı!' : 'New achievements unlocked!';
+  String get leaderboardTitle =>
+      _isTr ? 'Liderlik Tablosu' : 'Leaderboard';
+  String get leaderboardGlobal =>
+      _isTr ? 'Genel' : 'Global';
+  String get leaderboardLanguage =>
+      _isTr ? 'Dil' : 'Language';
+  String get leaderboardMyRank =>
+      _isTr ? 'Sıram' : 'My Rank';
+  String get leaderboardNoData =>
+      _isTr ? 'Henüz liderlik verisi yok.' : 'No leaderboard data yet.';
+  String get leaderboardScore => _isTr ? 'Puan' : 'Score';
+  String get leaderboardRank => _isTr ? 'Sıra' : 'Rank';
+  String get leaderboardYou => _isTr ? 'Sen' : 'You';
   String performanceMessage(int percentage) {
     if (percentage >= 90) {
       return _isTr ? 'Mükemmel!' : 'Excellent!';

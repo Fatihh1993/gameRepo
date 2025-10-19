@@ -5,11 +5,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/models.dart';
 import '../utils/static_data.dart';
+import 'leaderboard_service.dart';
+import 'mission_service.dart';
 
 /// Basit ve çalışan Firebase Authentication servisi
 class AuthServiceV2 {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final LeaderboardService _leaderboardService = LeaderboardService();
+  final MissionService _missionService = MissionService();
 
   // Mevcut kullanıcı
   User? get currentUser => _auth.currentUser;
@@ -63,6 +67,8 @@ class AuthServiceV2 {
           'highScore': 0,
           'totalGamesPlayed': 0,
           'unlockedAchievements': [],
+          'passTokens': 0,
+          'coins': 0,
           'createdAt': FieldValue.serverTimestamp(),
         });
         usersCollectionSuccess = true;
@@ -207,11 +213,40 @@ class AuthServiceV2 {
         highScore: data['highScore'] ?? 0,
         totalGamesPlayed: data['totalGamesPlayed'] ?? 0,
         unlockedAchievements: List<String>.from(data['unlockedAchievements'] ?? []),
+        passTokens: data['passTokens'] ?? 0,
+        coins: data['coins'] ?? 0,
       );
     } catch (e) {
       print('❌ Profil getirme hatası: $e');
       return null;
     }
+  }
+
+  Future<void> consumePassTokens({
+    required String uid,
+    int count = 1,
+  }) async {
+    if (count <= 0) return;
+
+    final userRef = _firestore.collection('users').doc(uid);
+
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(userRef);
+      if (!snapshot.exists) {
+        throw Exception('Kullanıcı profili bulunamadı');
+      }
+
+      final data = snapshot.data()!;
+      final currentTokens = (data['passTokens'] ?? 0) as int;
+
+      if (currentTokens < count) {
+        throw Exception('Yetersiz pas hakkı');
+      }
+
+      transaction.update(userRef, {
+        'passTokens': currentTokens - count,
+      });
+    });
   }
 
   // 💾 OYUN SONUCUNU KAYDET
@@ -227,6 +262,8 @@ class AuthServiceV2 {
     try {
       final userRef = _firestore.collection('users').doc(uid);
       final newAchievements = <String>[];
+      String? username;
+      String? photoUrl;
 
       await _firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(userRef);
@@ -235,6 +272,8 @@ class AuthServiceV2 {
         }
 
         final data = snapshot.data()!;
+        username = data['username'] as String?;
+        photoUrl = data['profileImageUrl'] as String?;
 
         final currentExperience = (data['experience'] ?? 0) as int;
         final currentGames = (data['totalGamesPlayed'] ?? 0) as int;
@@ -312,6 +351,24 @@ class AuthServiceV2 {
       if (newAchievements.isNotEmpty) {
         print('🏆 Yeni başarımlar: $newAchievements');
       }
+
+      if (username != null) {
+        await _leaderboardService.submitScore(
+          uid: uid,
+          username: username!,
+          language: language,
+          score: score,
+          photoUrl: photoUrl,
+        );
+      }
+
+      await _missionService.updateMissionsOnGameResult(
+        uid: uid,
+        score: score,
+        wrongAnswers: wrongAnswers,
+        maxCombo: maxCombo,
+      );
+
       return newAchievements;
     } catch (e) {
       print('❌ Oyun sonucu kaydetme hatası: $e');

@@ -14,6 +14,8 @@ class UserModel {
   final int experience; // XP
   final int level; // Seviye
   final List<String> unlockedAchievements; // Açılan rozetler
+  final int passTokens;
+  final int coins;
 
   UserModel({
     required this.id,
@@ -25,6 +27,8 @@ class UserModel {
     this.experience = 0,
     this.level = 1,
     this.unlockedAchievements = const [],
+    this.passTokens = 0,
+    this.coins = 0,
   });
 
   // Seviye hesaplama (her 1000 XP = 1 level)
@@ -54,6 +58,8 @@ class UserModel {
       'experience': experience,
       'level': level,
       'unlockedAchievements': unlockedAchievements,
+      'passTokens': passTokens,
+      'coins': coins,
     };
   }
 
@@ -68,6 +74,8 @@ class UserModel {
       experience: map['experience'] ?? 0,
       level: map['level'] ?? 1,
       unlockedAchievements: List<String>.from(map['unlockedAchievements'] ?? []),
+      passTokens: map['passTokens'] ?? 0,
+      coins: map['coins'] ?? 0,
     );
   }
 
@@ -82,6 +90,8 @@ class UserModel {
     int? experience,
     int? level,
     List<String>? unlockedAchievements,
+    int? passTokens,
+    int? coins,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -93,6 +103,8 @@ class UserModel {
       experience: experience ?? this.experience,
       level: level ?? this.level,
       unlockedAchievements: unlockedAchievements ?? this.unlockedAchievements,
+      passTokens: passTokens ?? this.passTokens,
+      coins: coins ?? this.coins,
     );
   }
 }
@@ -266,4 +278,206 @@ enum AchievementType {
   highScore1000,   // 1000+ skor
   level10,         // Level 10
   level25,         // Level 25
+}
+
+class LeaderboardEntry {
+  final String userId;
+  final String username;
+  final String language;
+  final int score;
+  final int rank;
+  final String? photoUrl;
+  final DateTime? updatedAt;
+
+  LeaderboardEntry({
+    required this.userId,
+    required this.username,
+    required this.language,
+    required this.score,
+    this.rank = 0,
+    this.photoUrl,
+    this.updatedAt,
+  });
+
+  LeaderboardEntry copyWith({
+    int? rank,
+  }) {
+    return LeaderboardEntry(
+      userId: userId,
+      username: username,
+      language: language,
+      score: score,
+      rank: rank ?? this.rank,
+      photoUrl: photoUrl,
+      updatedAt: updatedAt,
+    );
+  }
+
+  factory LeaderboardEntry.fromFirestore(
+    Map<String, dynamic> data,
+    String userId,
+  ) {
+    return LeaderboardEntry(
+      userId: userId,
+      username: data['username'] ?? 'Unknown',
+      language: data['language'] ?? 'global',
+      score: ((data['score'] ?? 0) as num).toInt(),
+      photoUrl: data['photoUrl'] as String?,
+      updatedAt: data['updatedAt'] is Timestamp
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'username': username,
+      'language': language,
+      'score': score,
+      'photoUrl': photoUrl,
+      'updatedAt': updatedAt?.toIso8601String(),
+    };
+  }
+}
+
+enum MissionType {
+  daily,
+  weekly,
+}
+
+enum MissionMetric {
+  gamesPlayed,
+  scoreAccumulated,
+  perfectGame,
+  combo,
+}
+
+enum MissionRewardType {
+  xp,
+  pass,
+  coin,
+}
+
+class MissionDefinition {
+  final String id;
+  final MissionType type;
+  final String title;
+  final String description;
+  final MissionMetric metric;
+  final int target;
+  final MissionRewardType rewardType;
+  final int rewardValue;
+
+  const MissionDefinition({
+    required this.id,
+    required this.type,
+    required this.title,
+    required this.description,
+    required this.metric,
+    required this.target,
+    required this.rewardType,
+    required this.rewardValue,
+  });
+}
+
+class MissionProgress {
+  final MissionDefinition definition;
+  final int progress;
+  final bool isCompleted;
+  final bool isClaimed;
+  final DateTime? updatedAt;
+
+  const MissionProgress({
+    required this.definition,
+    required this.progress,
+    required this.isCompleted,
+    required this.isClaimed,
+    this.updatedAt,
+  });
+
+  double get completionRatio =>
+      (progress / definition.target).clamp(0, 1).toDouble();
+
+  MissionProgress copyWith({
+    int? progress,
+    bool? isCompleted,
+    bool? isClaimed,
+    DateTime? updatedAt,
+  }) {
+    return MissionProgress(
+      definition: definition,
+      progress: progress ?? this.progress,
+      isCompleted: isCompleted ?? this.isCompleted,
+      isClaimed: isClaimed ?? this.isClaimed,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
+class FriendSummary {
+  final String uid;
+  final String username;
+  final String? photoUrl;
+  final int level;
+  final int highScore;
+  final DateTime addedAt;
+
+  const FriendSummary({
+    required this.uid,
+    required this.username,
+    required this.level,
+    required this.highScore,
+    required this.addedAt,
+    this.photoUrl,
+  });
+}
+
+class FriendUserPreview {
+  final String uid;
+  final String username;
+  final String? photoUrl;
+  final int level;
+  final int highScore;
+
+  const FriendUserPreview({
+    required this.uid,
+    required this.username,
+    required this.level,
+    required this.highScore,
+    this.photoUrl,
+  });
+}
+
+enum FriendRequestStatus { pending, accepted, rejected }
+
+class FriendRequest {
+  final String uid;
+  final String username;
+  final String? photoUrl;
+  final FriendRequestStatus status;
+  final DateTime createdAt;
+  final bool isOutgoing;
+
+  const FriendRequest({
+    required this.uid,
+    required this.username,
+    required this.status,
+    required this.createdAt,
+    this.photoUrl,
+    this.isOutgoing = false,
+  });
+
+  FriendRequest copyWith({
+    FriendRequestStatus? status,
+    bool? isOutgoing,
+  }) {
+    return FriendRequest(
+      uid: uid,
+      username: username,
+      photoUrl: photoUrl,
+      createdAt: createdAt,
+      status: status ?? this.status,
+      isOutgoing: isOutgoing ?? this.isOutgoing,
+    );
+  }
 }

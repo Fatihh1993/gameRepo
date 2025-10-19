@@ -316,6 +316,8 @@ class AuthService {
         highScore: data['highScore'] ?? 0,
         totalGamesPlayed: data['totalGamesPlayed'] ?? 0,
         unlockedAchievements: List<String>.from(data['unlockedAchievements'] ?? []),
+        passTokens: data['passTokens'] ?? 0,
+        coins: data['coins'] ?? 0,
       );
     } catch (e) {
       print('Profil getirme hatası: $e');
@@ -343,6 +345,8 @@ class AuthService {
         'highScore': 0,
         'totalGamesPlayed': 0,
         'unlockedAchievements': [],
+        'passTokens': 0,
+        'coins': 0,
         'createdAt': FieldValue.serverTimestamp(),
       });
       

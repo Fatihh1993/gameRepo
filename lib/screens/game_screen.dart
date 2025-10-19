@@ -46,6 +46,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   int _maxCombo = 0;
   int _earnedXp = 0;
   int _passCount = 1;
+  int _basePassesRemaining = 1;
+  int _inventoryPasses = 0;
+  bool _isProcessingPass = false;
   int _correctAnswers = 0;
   int _wrongAnswers = 0;
 
@@ -58,6 +61,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       duration: const Duration(seconds: 20),
     )..addListener(_handleTimerTick);
 
+    _initializePlayerState();
     _loadQuestions();
   }
 
@@ -81,6 +85,19 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     if (_timerController.isCompleted && !_isAnswering) {
       _onTimeUp();
     }
+  }
+
+  Future<void> _initializePlayerState() async {
+    final user = _authService.currentUser;
+    if (user == null) return;
+
+    final profile = await _authService.getUserProfile(user.uid);
+    if (!mounted || profile == null) return;
+
+    setState(() {
+      _inventoryPasses = max(0, profile.passTokens);
+      _passCount = _basePassesRemaining + _inventoryPasses;
+    });
   }
 
   Future<void> _loadQuestions() async {
@@ -141,8 +158,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     _timerController.duration = Duration(seconds: _totalSeconds);
   }
 
-  void _startTimer() {
-    _timerController.forward(from: 0);
+  void _startTimer({double from = 0}) {
+    final startValue = from.clamp(0, 1).toDouble();
+    _timerController.forward(from: startValue);
   }
 
   void _stopTimer() {
@@ -181,7 +199,10 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       });
 
       if (_currentCombo > 0 && _currentCombo % 5 == 0) {
-        setState(() => _passCount += 1);
+        setState(() {
+          _basePassesRemaining += 1;
+          _passCount = _basePassesRemaining + _inventoryPasses;
+        });
         _showMessage(loc.passEarned(_passCount), AppColors.warning);
       }
 
@@ -223,17 +244,57 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     Future.delayed(const Duration(milliseconds: 900), _goNextQuestion);
   }
 
-  void _passQuestion() {
-    if (_isAnswering || _passCount <= 0) return;
+  Future<void> _passQuestion() async {
+    if (_isAnswering || _passCount <= 0 || _isProcessingPass) return;
+
     final loc = AppLocalizations(widget.languageManager.currentLanguage);
+    final currentProgress = _timerController.value;
+    final bool useInventory = _basePassesRemaining <= 0 && _inventoryPasses > 0;
+
     _stopTimer();
-    setState(() {
-      _passCount -= 1;
-      _currentCombo = 0;
-      _isAnswering = true;
-    });
-    _showMessage(loc.questionSkipped(_passCount), AppColors.warning);
-    Future.delayed(const Duration(milliseconds: 600), _goNextQuestion);
+
+    if (!useInventory) {
+      setState(() {
+        if (_basePassesRemaining > 0) {
+          _basePassesRemaining -= 1;
+        }
+        _passCount = _basePassesRemaining + _inventoryPasses;
+        _currentCombo = 0;
+        _isAnswering = true;
+      });
+      _showMessage(loc.questionSkipped(_passCount), AppColors.warning);
+      Future.delayed(const Duration(milliseconds: 600), _goNextQuestion);
+      return;
+    }
+
+    final user = _authService.currentUser;
+    if (user == null) {
+      _showMessage(loc.passUseError, AppColors.danger);
+      _startTimer(from: currentProgress);
+      return;
+    }
+
+    setState(() => _isProcessingPass = true);
+
+    try {
+      await _authService.consumePassTokens(uid: user.uid, count: 1);
+      if (!mounted) return;
+      setState(() {
+        _inventoryPasses = max(0, _inventoryPasses - 1);
+        _passCount = _basePassesRemaining + _inventoryPasses;
+        _currentCombo = 0;
+        _isAnswering = true;
+        _isProcessingPass = false;
+      });
+      _showMessage(loc.questionSkipped(_passCount), AppColors.warning);
+      Future.delayed(const Duration(milliseconds: 600), _goNextQuestion);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isProcessingPass = false);
+      await _initializePlayerState();
+      _showMessage(loc.passUseError, AppColors.danger);
+      _startTimer(from: currentProgress);
+    }
   }
 
   void _goNextQuestion() {
@@ -300,7 +361,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
           content: Text(message),
           backgroundColor: color,
           behavior: SnackBarBehavior.floating,
-        ),
+        ),            
       );
   }
 
@@ -341,7 +402,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               avatar: Text(widget.language.icon,
                   style: const TextStyle(fontSize: 16)),
               label: Text(
-                '${loc.score}: $_score',
+                '${loc.score}: $_score',      
                 style: TextStyle(
                   color: widget.language.color,
                   fontWeight: FontWeight.w600,
@@ -645,11 +706,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildPassButton(AppLocalizations loc) {
-    final canUsePass = _passCount > 0 && !_isAnswering;
-    final background = canUsePass
+    final hasPasses = _passCount > 0;
+    final canUsePass = hasPasses && !_isAnswering && !_isProcessingPass;
+    final background = hasPasses
         ? AppColors.warning.withValues(alpha: 0.18)
         : AppColors.backgroundLight;
-    final foreground = canUsePass
+    final foreground = hasPasses
         ? AppColors.warning.darken(0.25)
         : AppColors.neutral600;
 
@@ -666,11 +728,23 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.skip_next_rounded,
-            size: 24,
-            color: canUsePass ? AppColors.warning.darken(0.1) : null,
-          ),
+          if (_isProcessingPass)
+            SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.warning.darken(0.1),
+                ),
+              ),
+            )
+          else
+            Icon(
+              Icons.skip_next_rounded,
+              size: 24,
+              color: hasPasses ? AppColors.warning.darken(0.1) : null,
+            ),
           const SizedBox(height: 8),
           FittedBox(
             fit: BoxFit.scaleDown,

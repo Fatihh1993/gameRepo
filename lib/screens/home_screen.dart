@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../models/models.dart';
 import '../services/auth_service_v2.dart';
+import '../services/mission_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/language_manager.dart';
 import '../utils/theme_manager.dart';
+import 'friends_screen.dart';
 import 'language_selection_screen.dart';
+import 'leaderboard_screen.dart';
 import 'login_screen_v2.dart';
 import 'profile_screen.dart';
 
@@ -25,8 +28,12 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final AuthServiceV2 _authService = AuthServiceV2();
+  final MissionService _missionService = MissionService();
   UserModel? _currentUser;
   bool _isLoading = true;
+  bool _isLoadingMissions = true;
+  List<MissionProgress> _missions = const [];
+  String? _claimingMissionId;
 
   @override
   void initState() {
@@ -49,7 +56,17 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    if (mounted) {
+      setState(() {
+        _isLoadingMissions = true;
+      });
+    }
+
     final profile = await _authService.getUserProfile(user.uid);
+    final missions = await _missionService.fetchMissions(uid: user.uid);
+
+    if (!mounted) return;
+
     setState(() {
       _currentUser = profile ??
           UserModel(
@@ -61,9 +78,97 @@ class _HomeScreenState extends State<HomeScreen> {
             highScore: 0,
             totalGamesPlayed: 0,
             unlockedAchievements: const [],
+            passTokens: 0,
+            coins: 0,
           );
+      _missions = missions;
       _isLoading = false;
+      _isLoadingMissions = false;
+      _claimingMissionId = null;
     });
+  }
+
+  Future<void> _refreshUserProfile() async {
+    final user = _authService.currentUser;
+    if (user == null) return;
+
+    final profile = await _authService.getUserProfile(user.uid);
+    if (!mounted || profile == null) return;
+
+    setState(() {
+      _currentUser = profile;
+    });
+  }
+
+  Future<void> _claimMission(MissionProgress mission) async {
+    final user = _authService.currentUser;
+    if (user == null) return;
+
+    final missionId = mission.definition.id;
+    if (_claimingMissionId == missionId) return;
+
+    final loc = AppLocalizations(widget.languageManager.currentLanguage);
+
+    setState(() => _claimingMissionId = missionId);
+
+    try {
+      final updatedMission = await _missionService.claimMissionReward(
+        uid: user.uid,
+        missionId: missionId,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _missions = _missions.map((item) {
+          return item.definition.id == updatedMission.definition.id
+              ? updatedMission
+              : item;
+        }).toList();
+        _claimingMissionId = null;
+      });
+
+      await _refreshUserProfile();
+
+      if (!mounted) return;
+      final rewardText = _missionRewardLabel(updatedMission.definition, loc);
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(loc.missionClaimSuccess(rewardText)),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _claimingMissionId = null);
+
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(loc.missionClaimError),
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
+  }
+
+  String _missionRewardLabel(
+    MissionDefinition definition,
+    AppLocalizations loc,
+  ) {
+    switch (definition.rewardType) {
+      case MissionRewardType.xp:
+        return loc.missionRewardXp(definition.rewardValue);
+      case MissionRewardType.pass:
+        return loc.missionRewardPass(definition.rewardValue);
+      case MissionRewardType.coin:
+        return loc.missionRewardCoin(definition.rewardValue);
+    }
   }
 
   Future<void> _signOut() async {
@@ -138,6 +243,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildStatsRow(context, loc, user),
                 const SizedBox(height: 24),
                 _buildQuickActions(context, loc, user),
+                const SizedBox(height: 24),
+                _buildMissionsSection(loc),
               ],
             ),
           ),
@@ -352,6 +459,135 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+            Divider(color: AppColors.backgroundLight, thickness: 1.2),
+            const SizedBox(height: 12),
+            Text(
+              loc.inventory,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.neutral600,
+                  ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _InventoryChip(
+                  icon: Icons.skip_next_rounded,
+                  label: loc.passesLabel,
+                  value: '${user.passTokens}',
+                  color: AppColors.warning,
+                ),
+                _InventoryChip(
+                  icon: Icons.monetization_on_outlined,
+                  label: loc.coinsLabel,
+                  value: '${user.coins}',
+                  color: AppColors.secondary,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.leaderboard_rounded),
+                    label: Text(loc.leaderboardTitle),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.primary,
+                      side:
+                          const BorderSide(color: AppColors.primary, width: 1.4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => LeaderboardScreen(
+                            themeManager: widget.themeManager,
+                            languageManager: widget.languageManager,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.people_alt_rounded),
+                    label: Text(loc.friendsTitle),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      minimumSize: const Size.fromHeight(52),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => FriendsScreen(
+                            themeManager: widget.themeManager,
+                            languageManager: widget.languageManager,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMissionsSection(AppLocalizations loc) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              loc.missionsTitle,
+              style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            if (_isLoadingMissions)
+              const Center(child: CircularProgressIndicator())
+            else if (_missions.isEmpty)
+              Text(
+                loc.noMissions,
+                style: textTheme.bodyMedium?.copyWith(color: AppColors.neutral500),
+              )
+            else
+              Column(
+                children: _missions
+                    .map(
+                      (mission) => _MissionTile(
+                        mission: mission,
+                        loc: loc,
+                        rewardLabel: _missionRewardLabel(mission.definition, loc),
+                        onClaim: mission.isCompleted && !mission.isClaimed
+                            ? () => _claimMission(mission)
+                            : null,
+                        isClaiming:
+                            _claimingMissionId == mission.definition.id,
+                      ),
+                    )
+                    .toList(),
+              ),
           ],
         ),
       ),
@@ -404,6 +640,189 @@ class _StatCard extends StatelessWidget {
   }
 }
 
+class _MissionTile extends StatelessWidget {
+  final MissionProgress mission;
+  final AppLocalizations loc;
+  final String rewardLabel;
+  final VoidCallback? onClaim;
+  final bool isClaiming;
+
+  const _MissionTile({
+    required this.mission,
+    required this.loc,
+    required this.rewardLabel,
+    this.onClaim,
+    this.isClaiming = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final definition = mission.definition;
+    final progress = mission.progress > definition.target
+        ? definition.target
+        : mission.progress;
+    final ratio = mission.completionRatio;
+    final isCompleted = mission.isCompleted;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: definition.type == MissionType.daily
+                      ? AppColors.primary.withValues(alpha: 0.1)
+                      : AppColors.secondary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  definition.type == MissionType.daily
+                      ? loc.missionDaily
+                      : loc.missionWeekly,
+                  style: TextStyle(
+                    color: definition.type == MissionType.daily
+                        ? AppColors.primary
+                        : AppColors.secondary,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              Icon(
+                isCompleted ? Icons.verified_rounded : Icons.flag_outlined,
+                color: isCompleted ? AppColors.success : AppColors.neutral500,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            definition.title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            definition.description,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: AppColors.neutral600),
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: LinearProgressIndicator(
+              value: ratio,
+              minHeight: 8,
+              backgroundColor: AppColors.backgroundLight,
+              valueColor: AlwaysStoppedAnimation(
+                isCompleted ? AppColors.success : AppColors.primary,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$progress / ${definition.target}',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: AppColors.neutral600),
+              ),
+              Text(
+                rewardLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (onClaim != null)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: isClaiming ? null : onClaim,
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  minimumSize: const Size.fromHeight(44),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: isClaiming
+                    ? SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                    : Text(
+                        loc.missionClaim,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+              ),
+            )
+          else if (mission.isClaimed)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.success.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.verified_rounded, color: AppColors.success, size: 18),
+                    const SizedBox(width: 6),
+                    Text(
+                      loc.missionClaimed,
+                      style: TextStyle(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MiniStat extends StatelessWidget {
   final String emoji;
   final String label;
@@ -436,6 +855,58 @@ class _MiniStat extends StatelessWidget {
               ),
         ),
       ],
+    );
+  }
+}
+
+class _InventoryChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _InventoryChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
