@@ -38,23 +38,26 @@ class LeaderboardService {
     required String uid,
     required String username,
     required String language,
-    required int score,
+    required int languageScore,
+    required int globalScore,
     String? photoUrl,
   }) async {
+    final normalizedLanguage = language.toLowerCase();
+
+    // Dil skorlarını ayrı tut, global toplamı ayrıca güncelle.
     await _updateLeaderboard(
       uid: uid,
       username: username,
-      language: language,
-      score: score,
+      language: normalizedLanguage,
+      score: languageScore,
       photoUrl: photoUrl,
     );
 
-    // Global leaderboard da güncellensin
     await _updateLeaderboard(
       uid: uid,
       username: username,
       language: 'global',
-      score: score,
+      score: globalScore,
       photoUrl: photoUrl,
     );
   }
@@ -92,9 +95,8 @@ class LeaderboardService {
 
     await _firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(docRef);
-      final currentScore = snapshot.exists
-          ? (snapshot.data()?['score'] as int? ?? 0)
-          : 0;
+      final currentScore =
+          snapshot.exists ? (snapshot.data()?['score'] as int? ?? 0) : 0;
       if (score <= currentScore) {
         return;
       }

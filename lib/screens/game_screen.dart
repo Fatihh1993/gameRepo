@@ -51,6 +51,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   bool _isProcessingPass = false;
   int _correctAnswers = 0;
   int _wrongAnswers = 0;
+  _AnswerFeedback? _feedback;
 
   @override
   void initState() {
@@ -125,6 +126,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       setState(() {
         _questions = fetched;
         _isLoading = false;
+        _feedback = null;
       });
 
       _prepareTimerForQuestion();
@@ -171,8 +173,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   void _onTimeUp() {
     final loc = AppLocalizations(widget.languageManager.currentLanguage);
+    final question = _questions[_currentIndex];
+    final explanation = question.explanation?.trim();
+    final message = explanation?.isNotEmpty == true
+        ? explanation!
+        : loc.learningNoExplanation;
     _stopTimer();
-    _handleWrongAnswer(loc.timeUp);
+    _handleWrongAnswer(
+      title: loc.timeUp,
+      message: message,
+      dueToTimeout: true,
+    );
   }
 
   void _answerQuestion(bool userAnswer) {
@@ -186,62 +197,77 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     setState(() => _isAnswering = true);
 
     if (isCorrect) {
+      final explanation = question.explanation?.trim();
+      final detailMessage = explanation?.isNotEmpty == true
+          ? explanation!
+          : loc.learningNoExplanation;
       final baseScore = 100 * question.difficulty;
-      final comboBonus = _currentCombo >= 1 ? _currentCombo * 25 : 0;
+      final previousCombo = _currentCombo;
+      final comboBonus = previousCombo >= 1 ? previousCombo * 25 : 0;
       final total = baseScore + comboBonus;
+      final nextCombo = previousCombo + 1;
+      final earnedPass = nextCombo > 0 && nextCombo % 5 == 0;
+      String? comboHighlight;
+      if (nextCombo >= 2) {
+        comboHighlight = loc.comboMessage(nextCombo, total);
+      }
 
       setState(() {
-        _currentCombo += 1;
-        _maxCombo = max(_maxCombo, _currentCombo);
+        _currentCombo = nextCombo;
+        _maxCombo = max(_maxCombo, nextCombo);
         _score += total;
         _earnedXp += 50 * question.difficulty;
         _correctAnswers += 1;
-      });
-
-      if (_currentCombo > 0 && _currentCombo % 5 == 0) {
-        setState(() {
+        _isAnswering = true;
+        if (earnedPass) {
           _basePassesRemaining += 1;
           _passCount = _basePassesRemaining + _inventoryPasses;
-        });
-        _showMessage(loc.passEarned(_passCount), AppColors.warning);
-      }
-
-      final explanation = question.explanation?.trim().isNotEmpty == true
-          ? question.explanation!
-          : '';
-      final message = (explanation.isEmpty
-              ? loc.correctAnswer('')
-              : loc.correctAnswer(explanation))
-          .trim();
-      final feedback =
-          _currentCombo >= 2 ? loc.comboMessage(_currentCombo, total) : message;
-      _showMessage(feedback.trim(), AppColors.success);
+        }
+        _feedback = _AnswerFeedback(
+          question: question,
+          isCorrect: true,
+          title: loc.correct,
+          message: detailMessage,
+          comboText: comboHighlight,
+          bonusText: earnedPass ? loc.passEarned(_passCount) : null,
+        );
+      });
     } else {
-      final explanation = question.explanation?.trim().isNotEmpty == true
-          ? question.explanation!
-          : '';
-      final message = (explanation.isEmpty
-              ? loc.wrongAnswer('')
-              : loc.wrongAnswer(explanation))
-          .trim();
-      _handleWrongAnswer(message);
+      final explanation = question.explanation?.trim();
+      final detailMessage = explanation?.isNotEmpty == true
+          ? explanation!
+          : loc.learningNoExplanation;
+      _handleWrongAnswer(
+        title: loc.wrong,
+        message: detailMessage,
+      );
       return;
     }
 
     Future.delayed(const Duration(milliseconds: 900), _goNextQuestion);
   }
 
-  void _handleWrongAnswer(String message) {
+  void _handleWrongAnswer({
+    required String title,
+    required String message,
+    bool dueToTimeout = false,
+  }) {
+    final question = _questions[_currentIndex];
     setState(() {
       _lives = max(0, _lives - 1);
       _currentCombo = 0;
       _isAnswering = true;
       _wrongAnswers += 1;
+      _feedback = _AnswerFeedback(
+        question: question,
+        isCorrect: false,
+        title: title,
+        message: message,
+        dueToTimeout: dueToTimeout,
+      );
     });
 
-    _showMessage(message, AppColors.danger);
-
-    Future.delayed(const Duration(milliseconds: 900), _goNextQuestion);
+    Future.delayed(const Duration(milliseconds: 1100), _goNextQuestion);
   }
 
   Future<void> _passQuestion() async {
@@ -308,6 +334,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       setState(() {
         _currentIndex += 1;
         _isAnswering = false;
+        _feedback = null;
       });
       _prepareTimerForQuestion();
       _startTimer();
@@ -438,6 +465,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ),
               ),
             ),
+            _buildFeedbackSection(loc, question),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
               child: _buildAnswerButtons(context, loc),
@@ -638,8 +666,29 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
               ),
             ),
           ),
+          const SizedBox(height: 20),
         ],
       ),
+    );
+  }
+
+  Widget _buildFeedbackSection(AppLocalizations loc, Question question) {
+    final showFeedback =
+        _feedback != null && _feedback!.question.id == question.id;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 250),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      child: showFeedback
+          ? Padding(
+              key: ValueKey(
+                  '${question.id}_${_feedback!.isCorrect}_${_feedback!.dueToTimeout}_${_feedback!.message.hashCode}'),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: _AnswerFeedbackCard(
+                feedback: _feedback!,
+              ),
+            )
+          : const SizedBox.shrink(),
     );
   }
 
@@ -911,6 +960,126 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
         'params': TextStyle(color: Color(0xFF9CDCFE)),
         'operator': TextStyle(color: Color(0xFFD4D4D4)),
       };
+}
+
+class _AnswerFeedback {
+  final Question question;
+  final bool isCorrect;
+  final String title;
+  final String message;
+  final String? comboText;
+  final String? bonusText;
+  final bool dueToTimeout;
+
+  const _AnswerFeedback({
+    required this.question,
+    required this.isCorrect,
+    required this.title,
+    required this.message,
+    this.comboText,
+    this.bonusText,
+    this.dueToTimeout = false,
+  });
+}
+
+class _AnswerFeedbackCard extends StatelessWidget {
+  final _AnswerFeedback feedback;
+
+  const _AnswerFeedbackCard({
+    required this.feedback,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final baseColor = feedback.isCorrect ? AppColors.success : AppColors.danger;
+    final icon = feedback.isCorrect
+        ? Icons.check_circle_rounded
+        : (feedback.dueToTimeout
+            ? Icons.timer_off_rounded
+            : Icons.cancel_rounded);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: baseColor.withValues(alpha: 0.22)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            height: 52,
+            width: 52,
+            child: CircleAvatar(
+              backgroundColor: baseColor.withValues(alpha: 0.12),
+              foregroundColor: baseColor.darken(0.08),
+              child: Icon(icon, size: 26),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  feedback.title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: baseColor.darken(0.05),
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  feedback.message,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.neutral600,
+                        height: 1.4,
+                      ),
+                ),
+                if (feedback.bonusText != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      feedback.bonusText!,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.warning.darken(0.2),
+                          ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          if (feedback.comboText != null) ...[
+            const SizedBox(width: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.warning.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                feedback.comboText!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.warning.darken(0.2),
+                    ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 extension ColorBrightness on Color {

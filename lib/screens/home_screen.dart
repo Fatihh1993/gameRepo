@@ -4,6 +4,7 @@ import '../models/models.dart';
 import '../services/auth_service_v2.dart';
 import '../services/friend_service.dart';
 import '../services/mission_service.dart';
+import '../services/message_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/language_manager.dart';
 import '../utils/theme_manager.dart';
@@ -12,6 +13,7 @@ import 'language_selection_screen.dart';
 import 'leaderboard_screen.dart';
 import 'login_screen_v2.dart';
 import 'profile_screen.dart';
+import 'messages_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ThemeManager themeManager;
@@ -31,12 +33,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final AuthServiceV2 _authService = AuthServiceV2();
   final MissionService _missionService = MissionService();
   final FriendService _friendService = FriendService();
+  final MessageService _messageService = MessageService();
   UserModel? _currentUser;
   bool _isLoading = true;
   bool _isLoadingMissions = true;
   List<MissionProgress> _missions = const [];
   String? _claimingMissionId;
   Stream<List<FriendRequest>>? _incomingRequestsStream;
+  Stream<int>? _unreadMessagesStream;
 
   @override
   void initState() {
@@ -73,6 +77,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _incomingRequestsStream ??=
           _friendService.watchIncomingRequests(uid: user.uid);
+      _unreadMessagesStream ??=
+          _messageService.watchUnreadCount(uid: user.uid);
       _currentUser = profile ??
           UserModel(
             id: user.uid,
@@ -84,7 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
             totalGamesPlayed: 0,
             unlockedAchievements: const [],
             passTokens: 0,
-            coins: 0,
           );
       _missions = missions;
       _isLoading = false;
@@ -171,8 +176,6 @@ class _HomeScreenState extends State<HomeScreen> {
         return loc.missionRewardXp(definition.rewardValue);
       case MissionRewardType.pass:
         return loc.missionRewardPass(definition.rewardValue);
-      case MissionRewardType.coin:
-        return loc.missionRewardCoin(definition.rewardValue);
     }
   }
 
@@ -465,7 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            Divider(color: AppColors.backgroundLight, thickness: 1.2),
+            const Divider(color: AppColors.backgroundLight, thickness: 1.2),
             const SizedBox(height: 12),
             Text(
               loc.inventory,
@@ -485,43 +488,97 @@ class _HomeScreenState extends State<HomeScreen> {
                   value: '${user.passTokens}',
                   color: AppColors.warning,
                 ),
-                _InventoryChip(
-                  icon: Icons.monetization_on_outlined,
-                  label: loc.coinsLabel,
-                  value: '${user.coins}',
-                  color: AppColors.secondary,
-                ),
               ],
             ),
             const SizedBox(height: 20),
-            Row(
+            Column(
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.leaderboard_rounded),
-                    label: Text(loc.leaderboardTitle),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
-                      side:
-                          const BorderSide(color: AppColors.primary, width: 1.4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => LeaderboardScreen(
-                            themeManager: widget.themeManager,
-                            languageManager: widget.languageManager,
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.leaderboard_rounded),
+                        label: Text(loc.leaderboardTitle),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(
+                            color: AppColors.primary,
+                            width: 1.4,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                      );
-                    },
-                  ),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => LeaderboardScreen(
+                                themeManager: widget.themeManager,
+                                languageManager: widget.languageManager,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _unreadMessagesStream == null
+                          ? OutlinedButton.icon(
+                              icon: const Icon(Icons.mail_outline_rounded),
+                              label: Text(loc.messagesTitle),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                side: const BorderSide(
+                                  color: AppColors.primary,
+                                  width: 1.4,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                              onPressed: null,
+                            )
+                          : StreamBuilder<int>(
+                              stream: _unreadMessagesStream,
+                              builder: (context, snapshot) {
+                                final unreadCount = snapshot.data ?? 0;
+                                final messagesLabel = unreadCount > 0
+                                    ? '${loc.messagesTitle} ($unreadCount)'
+                                    : loc.messagesTitle;
+
+                                return OutlinedButton.icon(
+                                  icon: const Icon(Icons.mail_outline_rounded),
+                                  label: Text(messagesLabel),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.primary,
+                                    side: const BorderSide(
+                                      color: AppColors.primary,
+                                      width: 1.4,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => MessagesScreen(
+                                          languageManager:
+                                              widget.languageManager,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
                   child: StreamBuilder<List<FriendRequest>>(
                     stream: _incomingRequestsStream,
                     builder: (context, snapshot) {
@@ -787,7 +844,7 @@ class _MissionTile extends StatelessWidget {
                   ),
                 ),
                 child: isClaiming
-                    ? SizedBox(
+                    ? const SizedBox(
                         height: 18,
                         width: 18,
                         child: CircularProgressIndicator(
@@ -819,11 +876,11 @@ class _MissionTile extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.verified_rounded, color: AppColors.success, size: 18),
+                    const Icon(Icons.verified_rounded, color: AppColors.success, size: 18),
                     const SizedBox(width: 6),
                     Text(
                       loc.missionClaimed,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.success,
                         fontWeight: FontWeight.w600,
                       ),

@@ -37,8 +37,8 @@ class MissionService {
       description: 'Hiç yanlış yapmadan bir oyun bitir.',
       metric: MissionMetric.perfectGame,
       target: 1,
-      rewardType: MissionRewardType.coin,
-      rewardValue: 10,
+      rewardType: MissionRewardType.xp,
+      rewardValue: 250,
     ),
   ];
 
@@ -205,10 +205,6 @@ class MissionService {
         case MissionRewardType.pass:
           final currentPasses = (userData['passTokens'] ?? 0) as int;
           userUpdates['passTokens'] = currentPasses + rewardValue;
-          break;
-        case MissionRewardType.coin:
-          final currentCoins = (userData['coins'] ?? 0) as int;
-          userUpdates['coins'] = currentCoins + rewardValue;
           break;
       }
 

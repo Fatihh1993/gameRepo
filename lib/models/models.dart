@@ -15,7 +15,6 @@ class UserModel {
   final int level; // Seviye
   final List<String> unlockedAchievements; // Açılan rozetler
   final int passTokens;
-  final int coins;
   final bool isOnline;
   final bool shareOnlineStatus;
   final DateTime? lastSeen;
@@ -31,7 +30,6 @@ class UserModel {
     this.level = 1,
     this.unlockedAchievements = const [],
     this.passTokens = 0,
-    this.coins = 0,
     this.isOnline = false,
     this.shareOnlineStatus = true,
     this.lastSeen,
@@ -65,7 +63,6 @@ class UserModel {
       'level': level,
       'unlockedAchievements': unlockedAchievements,
       'passTokens': passTokens,
-      'coins': coins,
       'isOnline': isOnline,
       'shareOnlineStatus': shareOnlineStatus,
       'lastSeen': lastSeen?.toIso8601String(),
@@ -94,7 +91,6 @@ class UserModel {
       level: _readInt(map['level'], fallback: 1),
       unlockedAchievements: List<String>.from(map['unlockedAchievements'] ?? []),
       passTokens: _readInt(map['passTokens']),
-      coins: _readInt(map['coins']),
       isOnline: (map['isOnline'] ?? false) as bool,
       shareOnlineStatus: (map['shareOnlineStatus'] ?? true) as bool,
       lastSeen: lastSeen,
@@ -113,7 +109,6 @@ class UserModel {
     int? level,
     List<String>? unlockedAchievements,
     int? passTokens,
-    int? coins,
     bool? isOnline,
     bool? shareOnlineStatus,
     DateTime? lastSeen,
@@ -129,7 +124,6 @@ class UserModel {
       level: level ?? this.level,
       unlockedAchievements: unlockedAchievements ?? this.unlockedAchievements,
       passTokens: passTokens ?? this.passTokens,
-      coins: coins ?? this.coins,
       isOnline: isOnline ?? this.isOnline,
       shareOnlineStatus: shareOnlineStatus ?? this.shareOnlineStatus,
       lastSeen: lastSeen ?? this.lastSeen,
@@ -377,6 +371,139 @@ class LeaderboardEntry {
   }
 }
 
+class InboxMessage {
+  final String id;
+  final String senderUid;
+  final String senderUsername;
+  final String? senderPhotoUrl;
+  final String text;
+  final DateTime? createdAt;
+  final bool isRead;
+
+  const InboxMessage({
+    required this.id,
+    required this.senderUid,
+    required this.senderUsername,
+    this.senderPhotoUrl,
+    required this.text,
+    this.createdAt,
+    this.isRead = false,
+  });
+
+  factory InboxMessage.fromFirestore(
+    Map<String, dynamic> data,
+    String docId,
+  ) {
+    DateTime? createdAt;
+    final rawCreatedAt = data['createdAt'];
+    if (rawCreatedAt is Timestamp) {
+      createdAt = rawCreatedAt.toDate();
+    } else if (rawCreatedAt is DateTime) {
+      createdAt = rawCreatedAt;
+    } else if (rawCreatedAt is String) {
+      createdAt = DateTime.tryParse(rawCreatedAt);
+    }
+
+    return InboxMessage(
+      id: docId,
+      senderUid: data['senderUid'] as String? ?? '',
+      senderUsername: data['senderUsername'] as String? ?? 'Player',
+      senderPhotoUrl: data['senderPhotoUrl'] as String?,
+      text: data['text'] as String? ?? '',
+      createdAt: createdAt,
+      isRead: (data['isRead'] ?? false) as bool,
+    );
+  }
+}
+
+class ConversationMessage {
+  final String id;
+  final String senderUid;
+  final String receiverUid;
+  final String text;
+  final DateTime? createdAt;
+
+  const ConversationMessage({
+    required this.id,
+    required this.senderUid,
+    required this.receiverUid,
+    required this.text,
+    this.createdAt,
+  });
+
+  factory ConversationMessage.fromFirestore(
+    Map<String, dynamic> data,
+    String docId,
+  ) {
+    DateTime? createdAt;
+    final rawCreatedAt = data['createdAt'];
+    if (rawCreatedAt is Timestamp) {
+      createdAt = rawCreatedAt.toDate();
+    } else if (rawCreatedAt is DateTime) {
+      createdAt = rawCreatedAt;
+    } else if (rawCreatedAt is String) {
+      createdAt = DateTime.tryParse(rawCreatedAt);
+    }
+
+    return ConversationMessage(
+      id: docId,
+      senderUid: data['senderUid'] as String? ?? '',
+      receiverUid: data['receiverUid'] as String? ?? '',
+      text: data['text'] as String? ?? '',
+      createdAt: createdAt,
+    );
+  }
+}
+
+class ConversationPreview {
+  final String friendUid;
+  final String friendUsername;
+  final String? friendPhotoUrl;
+  final String lastMessage;
+  final DateTime? lastMessageAt;
+  final String lastMessageSenderUid;
+  final int unreadCount;
+
+  const ConversationPreview({
+    required this.friendUid,
+    required this.friendUsername,
+    required this.lastMessage,
+    required this.lastMessageSenderUid,
+    this.friendPhotoUrl,
+    this.lastMessageAt,
+    this.unreadCount = 0,
+  });
+
+  bool get hasUnread => unreadCount > 0;
+
+  factory ConversationPreview.fromFirestore(
+    Map<String, dynamic> data,
+    String docId,
+  ) {
+    DateTime? lastMessageAt;
+    final rawLastMessageAt = data['lastMessageAt'];
+    if (rawLastMessageAt is Timestamp) {
+      lastMessageAt = rawLastMessageAt.toDate();
+    } else if (rawLastMessageAt is DateTime) {
+      lastMessageAt = rawLastMessageAt;
+    } else if (rawLastMessageAt is String) {
+      lastMessageAt = DateTime.tryParse(rawLastMessageAt);
+    }
+
+    return ConversationPreview(
+      friendUid: data['friendUid'] as String? ?? docId,
+      friendUsername: data['friendUsername'] as String? ?? 'player',
+      friendPhotoUrl: data['friendPhotoUrl'] as String?,
+      lastMessage: data['lastMessage'] as String? ?? '',
+      lastMessageAt: lastMessageAt,
+      lastMessageSenderUid: data['lastMessageSenderUid'] as String? ?? '',
+      unreadCount: (data['unreadCount'] ?? 0) is int
+          ? data['unreadCount'] as int
+          : int.tryParse(data['unreadCount'].toString()) ?? 0,
+    );
+  }
+}
+
 enum MissionType {
   daily,
   weekly,
@@ -392,7 +519,6 @@ enum MissionMetric {
 enum MissionRewardType {
   xp,
   pass,
-  coin,
 }
 
 class MissionDefinition {

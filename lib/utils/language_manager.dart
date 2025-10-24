@@ -113,13 +113,9 @@ class AppLocalizations {
   String get missionDaily => _isTr ? 'Günlük' : 'Daily';
   String get missionWeekly => _isTr ? 'Haftalık' : 'Weekly';
   String missionRewardXp(int value) => '+$value XP';
-  String missionRewardPass(int value) =>
-      _isTr ? '+$value Pas' : '+$value Pass';
-  String missionRewardCoin(int value) =>
-      _isTr ? '+$value Jeton' : '+$value Coins';
+  String missionRewardPass(int value) => _isTr ? '+$value Pas' : '+$value Pass';
   String get inventory => _isTr ? 'Envanter' : 'Inventory';
   String get passesLabel => _isTr ? 'Pas' : 'Passes';
-  String get coinsLabel => _isTr ? 'Jeton' : 'Coins';
   String get missionClaim => _isTr ? 'Ödülü Al' : 'Claim Reward';
   String get missionClaimed => _isTr ? 'Ödül Alındı' : 'Claimed';
   String missionClaimSuccess(String reward) =>
@@ -133,10 +129,8 @@ class AppLocalizations {
   String get friendsTitle => _isTr ? 'Arkadaşlar' : 'Friends';
   String get friendsTab => _isTr ? 'Arkadaşlar' : 'Friends';
   String get requestsTab => _isTr ? 'İstekler' : 'Requests';
-  String get friendSearchLabel =>
-      _isTr ? 'Kullanıcı adı' : 'Username';
-  String get friendSearchHint =>
-      _isTr ? 'ör. coder_ali' : 'e.g. coder_ali';
+  String get friendSearchLabel => _isTr ? 'Kullanıcı adı' : 'Username';
+  String get friendSearchHint => _isTr ? 'ör. coder_ali' : 'e.g. coder_ali';
   String get friendSearchButton => _isTr ? 'Ara' : 'Search';
   String get friendAddButton => _isTr ? 'Ekle' : 'Add';
   String get friendEnterUsername =>
@@ -145,8 +139,10 @@ class AppLocalizations {
       _isTr ? 'Önce kullanıcıyı arayın' : 'Search for the player first';
   String get friendRequestSent =>
       _isTr ? 'Arkadaşlık isteği gönderildi' : 'Friend request sent';
-  String get friendsEmpty =>
-      _isTr ? 'Henüz arkadaşın yok' : 'No friends yet';
+  String get friendLoginRequired => _isTr
+      ? 'Arkadaş eklemek için giriş yapmalısın'
+      : 'You need to sign in to add friends';
+  String get friendsEmpty => _isTr ? 'Henüz arkadaşın yok' : 'No friends yet';
   String get requestsEmpty =>
       _isTr ? 'Bekleyen istek yok' : 'No pending requests';
   String get friendIncomingHeader =>
@@ -158,10 +154,8 @@ class AppLocalizations {
   String get friendReject => _isTr ? 'Reddet' : 'Decline';
   String get friendAccept => _isTr ? 'Kabul Et' : 'Accept';
   String get friendPending => _isTr ? 'Beklemede' : 'Pending';
-  String get friendViewProfile =>
-      _isTr ? 'Profili Gör' : 'View Profile';
-  String get friendRemove =>
-      _isTr ? 'Arkadaşlığı Sil' : 'Remove Friend';
+  String get friendViewProfile => _isTr ? 'Profili Gör' : 'View Profile';
+  String get friendRemove => _isTr ? 'Arkadaşlığı Sil' : 'Remove Friend';
   String friendProfileTitle(String username) =>
       _isTr ? '$username Profili' : '$username Profile';
   String get friendOnline => _isTr ? 'Çevrim içi' : 'Online';
@@ -169,15 +163,32 @@ class AppLocalizations {
       _isTr ? 'Son görülme: $time' : 'Last seen: $time';
   String get friendLastSeenUnknown =>
       _isTr ? 'Son görülme bilinmiyor' : 'Last seen unknown';
-  String get friendStatusHidden =>
-      _isTr ? 'Durum gizli' : 'Status hidden';
+  String get friendStatusHidden => _isTr ? 'Durum gizli' : 'Status hidden';
   String get profileOnlineVisibility =>
       _isTr ? 'Çevrim içi durumumu paylaş' : 'Share my online status';
   String get profileOnlineVisibilityDesc => _isTr
       ? 'Arkadaşların ne zaman çevrim içi olduğunuzu görebilir.'
       : 'Let friends see when you are online or last active.';
-  String get profileOnlineVisibilityUpdated =>
-      _isTr ? 'Çevrim içi durum tercihi güncellendi' : 'Online status preference updated';
+  String get profileOnlineVisibilityUpdated => _isTr
+      ? 'Çevrim içi durum tercihi güncellendi'
+      : 'Online status preference updated';
+  String get messagesTitle => _isTr ? 'Mesajlar' : 'Messages';
+  String get messagesInbox => _isTr ? 'Gelen Kutusu' : 'Inbox';
+  String get messagesEmpty =>
+      _isTr ? 'Henüz mesajın yok.' : 'You have no messages yet.';
+  String get messagesUnread => _isTr ? 'Okunmamış' : 'Unread';
+  String get messagesFriendsOnly => _isTr
+      ? 'Mesajlaşma yalnızca arkadaşlar arasında kullanılabilir.'
+      : 'Messaging is available only between friends.';
+  String messagesFrom(String username) => _isTr
+      ? '$username sana mesaj gönderdi.'
+      : '$username sent you a message.';
+  String get messagesYouPrefix => _isTr ? 'Sen:' : 'You:';
+  String get messagesInputHint =>
+      _isTr ? 'Bir mesaj yaz...' : 'Type a message...';
+  String get messagesStartChat => _isTr
+      ? 'Henüz konuşma yok. İlk mesajı sen gönder!'
+      : 'No messages yet. Say hello!';
 
   // Language selection
   String get languageSelectionTitle => _isTr
@@ -228,6 +239,18 @@ class AppLocalizations {
       : 'Question skipped! Passes left: $remaining';
   String timerDifficultyLabel(String difficulty, int seconds) =>
       _isTr ? '$difficulty ($seconds sn)' : '$difficulty (${seconds}s)';
+  String get learningViewCard =>
+      _isTr ? 'Kod kartını aç' : 'Open learning card';
+  String get learningCardTitle => _isTr ? 'Kod Kartı' : 'Learning Card';
+  String get learningStatusCorrect => _isTr ? 'Doğru' : 'Correct';
+  String get learningStatusIncorrect => _isTr ? 'Yanlış' : 'Incorrect';
+  String get learningKeyPoints =>
+      _isTr ? 'Öne çıkan noktalar' : 'Key takeaways';
+  String get learningNoExplanation => _isTr
+      ? 'Bu soru için açıklama henüz eklenmemiş.'
+      : 'No explanation has been added yet.';
+  String get learningTags => _isTr ? 'Etiketler' : 'Tags';
+  String get learningClose => _isTr ? 'Anladım' : 'Got it';
 
   // Result
   String get gameOver => _isTr ? 'Oyun Bitti' : 'Game Over';
@@ -241,21 +264,28 @@ class AppLocalizations {
   String get backToHome => _isTr ? 'Ana Sayfaya Dön' : 'Back to Home';
   String get achievementsUnlocked =>
       _isTr ? 'Yeni başarımlar açıldı!' : 'New achievements unlocked!';
-  String get leaderboardTitle =>
-      _isTr ? 'Liderlik Tablosu' : 'Leaderboard';
-  String get leaderboardGlobal =>
-      _isTr ? 'Genel' : 'Global';
-  String get leaderboardLanguage =>
-      _isTr ? 'Dil' : 'Language';
-  String get leaderboardMyRank =>
-      _isTr ? 'Sıram' : 'My Rank';
+  String get leaderboardTitle => _isTr ? 'Liderlik Tablosu' : 'Leaderboard';
+  String get leaderboardGlobal => _isTr ? 'Genel' : 'Global';
+  String get leaderboardLanguage => _isTr ? 'Dil' : 'Language';
+  String get leaderboardMyRank => _isTr ? 'Sıram' : 'My Rank';
   String get leaderboardNoData =>
       _isTr ? 'Henüz liderlik verisi yok.' : 'No leaderboard data yet.';
   String get leaderboardScore => _isTr ? 'Puan' : 'Score';
   String get leaderboardRank => _isTr ? 'Sıra' : 'Rank';
   String get leaderboardYou => _isTr ? 'Sen' : 'You';
-  String get relativeJustNow =>
-      _isTr ? 'az önce' : 'just now';
+  String leaderboardMessageTitle(String username) =>
+      _isTr ? '$username oyuncusuna mesaj' : 'Message $username';
+  String get leaderboardMessageHint =>
+      _isTr ? 'Kısa bir mesaj yaz...' : 'Write a short message...';
+  String get leaderboardMessageSend => _isTr ? 'Gönder' : 'Send';
+  String get leaderboardMessageSent =>
+      _isTr ? 'Mesaj gönderildi!' : 'Message sent!';
+  String get leaderboardMessageTooShort => _isTr
+      ? 'Mesaj en az 3 karakter olmalı'
+      : 'Message must be at least 3 characters long.';
+  String get leaderboardMessageAction =>
+      _isTr ? 'Mesaj gönder' : 'Send message';
+  String get relativeJustNow => _isTr ? 'az önce' : 'just now';
   String relativeMinutes(int minutes) => _isTr
       ? '$minutes dakika önce'
       : minutes == 1

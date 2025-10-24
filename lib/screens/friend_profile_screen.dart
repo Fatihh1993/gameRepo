@@ -215,9 +215,9 @@ class _FriendProfileView extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _FriendStatTile(
-                icon: Icons.currency_bitcoin,
-                label: loc.coinsLabel,
-                value: '${user.coins}',
+                icon: Icons.emoji_events_rounded,
+                label: loc.achievements,
+                value: '${user.unlockedAchievements.length}',
                 color: AppColors.warning,
               ),
             ),

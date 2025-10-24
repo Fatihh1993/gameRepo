@@ -17,7 +17,7 @@ class AuthServiceV2 {
 
   // Mevcut kullanıcı
   User? get currentUser => _auth.currentUser;
-  
+
   // Auth state stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
@@ -37,10 +37,8 @@ class AuthServiceV2 {
       print('👤 Username: $username');
 
       // Önce username'in kullanılıp kullanılmadığını kontrol et
-      final existingUsername = await _firestore
-          .collection('usernames')
-          .doc(username)
-          .get();
+      final existingUsername =
+          await _firestore.collection('usernames').doc(username).get();
 
       if (existingUsername.exists) {
         throw Exception('Bu kullanıcı adı zaten kullanılıyor');
@@ -68,7 +66,6 @@ class AuthServiceV2 {
           'totalGamesPlayed': 0,
           'unlockedAchievements': [],
           'passTokens': 0,
-          'coins': 0,
           'isOnline': false,
           'shareOnlineStatus': true,
           'lastSeen': FieldValue.serverTimestamp(),
@@ -97,16 +94,18 @@ class AuthServiceV2 {
       if (!usersCollectionSuccess || !usernamesCollectionSuccess) {
         print('⚠️ UYARI: Firestore yazma işlemi eksik!');
         print('   Users Collection: ${usersCollectionSuccess ? '✅' : '❌'}');
-        print('   Usernames Collection: ${usernamesCollectionSuccess ? '✅' : '❌'}');
-        
+        print(
+            '   Usernames Collection: ${usernamesCollectionSuccess ? '✅' : '❌'}');
+
         // En az users collection başarılı olmalı
         if (!usersCollectionSuccess) {
           throw Exception('Profil oluşturulamadı, lütfen tekrar deneyin');
         }
-        
+
         // Usernames başarısız ise kullanıcıyı uyar ama devam et
         if (!usernamesCollectionSuccess) {
-          print('⚠️ Kullanıcı adı ile giriş şu an çalışmayabilir, email kullanın');
+          print(
+              '⚠️ Kullanıcı adı ile giriş şu an çalışmayabilir, email kullanın');
         }
       }
 
@@ -114,7 +113,7 @@ class AuthServiceV2 {
       return user;
     } catch (e) {
       print('❌ Kayıt hatası: $e');
-      
+
       // Eğer auth başarılı olmuşsa ama Firestore'a yazarken hata olduysa,
       // kullanıcıyı sil ve hatayı fırlat (tutarsız durum olmasın)
       if (user != null && !usersCollectionSuccess) {
@@ -126,7 +125,7 @@ class AuthServiceV2 {
           print('❌ Kullanıcı silinemedi: $deleteError');
         }
       }
-      
+
       rethrow;
     }
   }
@@ -141,17 +140,15 @@ class AuthServiceV2 {
       print('📧 Email/Username: $email');
 
       String loginEmail = email.trim();
-      
+
       // Eğer @ işareti yoksa, bu bir kullanıcı adı olabilir
       if (!loginEmail.contains('@')) {
         print('👤 Kullanıcı adı ile giriş deneniyor: $loginEmail');
-        
+
         // Firestore'dan kullanıcı adına karşılık gelen email'i bul
-        final usernameDoc = await _firestore
-            .collection('usernames')
-            .doc(loginEmail)
-            .get();
-        
+        final usernameDoc =
+            await _firestore.collection('usernames').doc(loginEmail).get();
+
         if (usernameDoc.exists) {
           final data = usernameDoc.data();
           if (data != null && data.containsKey('email')) {
@@ -159,12 +156,14 @@ class AuthServiceV2 {
             print('✅ Kullanıcı adı bulundu, email: $loginEmail');
           } else {
             print('❌ Username mapping verisi hatalı');
-            throw Exception('Kullanıcı adı verisi hatalı. Lütfen email ile giriş yapın.');
+            throw Exception(
+                'Kullanıcı adı verisi hatalı. Lütfen email ile giriş yapın.');
           }
         } else {
           print('❌ Kullanıcı adı bulunamadı: $loginEmail');
           print('💡 İpucu: Email ile giriş yapmayı deneyin');
-          throw Exception('Kullanıcı adı bulunamadı. Email ile giriş yapmayı deneyin.');
+          throw Exception(
+              'Kullanıcı adı bulunamadı. Email ile giriş yapmayı deneyin.');
         }
       }
 
@@ -186,9 +185,9 @@ class AuthServiceV2 {
   Future<void> resetPassword(String email) async {
     try {
       print('📧 Şifre sıfırlama email\'i gönderiliyor: $email');
-      
+
       await _auth.sendPasswordResetEmail(email: email);
-      
+
       print('✅ Email gönderildi!');
     } catch (e) {
       print('❌ Şifre sıfırlama hatası: $e');
@@ -200,7 +199,7 @@ class AuthServiceV2 {
   Future<UserModel?> getUserProfile(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
-      
+
       if (!doc.exists) {
         print('⚠️ Kullanıcı profili bulunamadı: $uid');
         return null;
@@ -232,10 +231,13 @@ class AuthServiceV2 {
       final batch = _firestore.batch();
       final timestamp = FieldValue.serverTimestamp();
 
-      batch.set(userRef, {
-        'isOnline': share ? isOnline : false,
-        'lastSeen': timestamp,
-      }, SetOptions(merge: true));
+      batch.set(
+          userRef,
+          {
+            'isOnline': share ? isOnline : false,
+            'lastSeen': timestamp,
+          },
+          SetOptions(merge: true));
 
       for (final doc in friendsSnapshot.docs) {
         final friendUid = doc.id;
@@ -245,11 +247,14 @@ class AuthServiceV2 {
             .collection('friends')
             .doc(user.uid);
 
-        batch.set(friendRef, {
-          'isOnline': share ? isOnline : false,
-          'lastSeen': share ? timestamp : null,
-          'shareOnlineStatus': share,
-        }, SetOptions(merge: true));
+        batch.set(
+            friendRef,
+            {
+              'isOnline': share ? isOnline : false,
+              'lastSeen': share ? timestamp : null,
+              'shareOnlineStatus': share,
+            },
+            SetOptions(merge: true));
       }
 
       await batch.commit();
@@ -274,11 +279,14 @@ class AuthServiceV2 {
       final batch = _firestore.batch();
       final timestamp = FieldValue.serverTimestamp();
 
-      batch.set(userRef, {
-        'shareOnlineStatus': share,
-        'isOnline': share ? currentOnline : false,
-        'lastSeen': timestamp,
-      }, SetOptions(merge: true));
+      batch.set(
+          userRef,
+          {
+            'shareOnlineStatus': share,
+            'isOnline': share ? currentOnline : false,
+            'lastSeen': timestamp,
+          },
+          SetOptions(merge: true));
 
       for (final doc in friendsSnapshot.docs) {
         final friendUid = doc.id;
@@ -288,11 +296,14 @@ class AuthServiceV2 {
             .collection('friends')
             .doc(user.uid);
 
-        batch.set(friendRef, {
-          'shareOnlineStatus': share,
-          'isOnline': share ? currentOnline : false,
-          'lastSeen': share ? timestamp : null,
-        }, SetOptions(merge: true));
+        batch.set(
+            friendRef,
+            {
+              'shareOnlineStatus': share,
+              'isOnline': share ? currentOnline : false,
+              'lastSeen': share ? timestamp : null,
+            },
+            SetOptions(merge: true));
       }
 
       await batch.commit();
@@ -344,6 +355,8 @@ class AuthServiceV2 {
       final newAchievements = <String>[];
       String? username;
       String? photoUrl;
+      int? aggregatedLanguageScore;
+      int? aggregatedGlobalScore;
 
       await _firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(userRef);
@@ -368,7 +381,21 @@ class AuthServiceV2 {
           for (final item in (data['languagesPlayed'] as List<dynamic>? ?? []))
             item.toString().toLowerCase(),
         };
-        languagesPlayed.add(language.toLowerCase());
+        final normalizedLanguage = language.toLowerCase();
+        languagesPlayed.add(normalizedLanguage);
+
+        // Dil bazlı toplam puanları takip et.
+        final Map<String, int> languageTotals = <String, int>{
+          for (final entry
+              in (data['languageTotals'] as Map<String, dynamic>? ?? {})
+                  .entries)
+            entry.key: (entry.value is num)
+                ? (entry.value as num).toInt()
+                : int.tryParse(entry.value.toString()) ?? 0,
+        };
+        final updatedLanguageTotal =
+            (languageTotals[normalizedLanguage] ?? 0) + score;
+        languageTotals[normalizedLanguage] = updatedLanguageTotal;
 
         final Set<String> unlocked = {
           for (final item
@@ -379,11 +406,12 @@ class AuthServiceV2 {
         final updatedGames = currentGames + 1;
         final updatedExperience = currentExperience + earnedXP;
         final updatedHighScore = max(currentHighScore, score);
-        final updatedTotalScore = currentTotalScore + score;
+        final newTotalScore = currentTotalScore + score;
         final updatedTotalCorrect = currentTotalCorrect + correctAnswers;
         final updatedTotalWrong = currentTotalWrong + wrongAnswers;
         final updatedBestCombo = max(currentBestCombo, maxCombo);
-        final computedLevel = max(_calculateLevel(updatedExperience), currentLevel);
+        final computedLevel =
+            max(_calculateLevel(updatedExperience), currentLevel);
 
         final achieved = _evaluateAchievements(
           totalGames: updatedGames,
@@ -409,11 +437,12 @@ class AuthServiceV2 {
           'totalGamesPlayed': updatedGames,
           'experience': updatedExperience,
           'highScore': updatedHighScore,
-          'totalScore': updatedTotalScore,
+          'totalScore': newTotalScore,
           'totalCorrect': updatedTotalCorrect,
           'totalWrong': updatedTotalWrong,
           'bestCombo': updatedBestCombo,
           'languagesPlayed': languagesPlayed.toList(),
+          'languageTotals': languageTotals,
           'unlockedAchievements': unlocked.toList(),
           'currentLevel': computedLevel,
           'lastGameAt': FieldValue.serverTimestamp(),
@@ -425,6 +454,9 @@ class AuthServiceV2 {
             'playedAt': FieldValue.serverTimestamp(),
           },
         });
+
+        aggregatedLanguageScore = updatedLanguageTotal;
+        aggregatedGlobalScore = newTotalScore;
       });
 
       print('✅ Oyun sonucu kaydedildi');
@@ -437,7 +469,8 @@ class AuthServiceV2 {
           uid: uid,
           username: username!,
           language: language,
-          score: score,
+          languageScore: aggregatedLanguageScore ?? score,
+          globalScore: aggregatedGlobalScore ?? score,
           photoUrl: photoUrl,
         );
       }
@@ -475,16 +508,16 @@ class AuthServiceV2 {
         lang.toString().toLowerCase(),
     };
 
-    final lastGame =
-        data['lastGame'] is Map<String, dynamic> ? data['lastGame'] as Map<String, dynamic> : <String, dynamic>{};
+    final lastGame = data['lastGame'] is Map<String, dynamic>
+        ? data['lastGame'] as Map<String, dynamic>
+        : <String, dynamic>{};
     final lastGameCorrect = ((lastGame['correct'] ?? 0) as num).toInt();
     final lastGameWrong = ((lastGame['wrong'] ?? 0) as num).toInt();
     final lastGameScore = ((lastGame['score'] ?? 0) as num).toInt();
     final lastGameMaxCombo = ((lastGame['maxCombo'] ?? 0) as num).toInt();
 
     final Set<String> unlocked = {
-      for (final item
-          in (data['unlockedAchievements'] as List<dynamic>? ?? []))
+      for (final item in (data['unlockedAchievements'] as List<dynamic>? ?? []))
         item.toString(),
     };
 
