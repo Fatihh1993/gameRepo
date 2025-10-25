@@ -41,6 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _claimingMissionId;
   Stream<List<FriendRequest>>? _incomingRequestsStream;
   Stream<int>? _unreadMessagesStream;
+  bool _missionsExpanded = false;
 
   @override
   void initState() {
@@ -341,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
             loc.homeGreeting,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -350,13 +351,18 @@ class _HomeScreenState extends State<HomeScreen> {
             loc.chooseLanguageCTA,
             style: const TextStyle(
               color: Colors.white70,
+              fontSize: 13,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+          _buildHeroQuickActions(context, loc),
+          const SizedBox(height: 20),
           SizedBox(
-            height: 48,
+            width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
+                minimumSize: const Size.fromHeight(52),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 backgroundColor: Colors.white,
                 foregroundColor: AppColors.primary,
                 elevation: 0,
@@ -377,7 +383,8 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Text(
                 loc.startQuiz,
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
               ),
             ),
@@ -418,6 +425,94 @@ class _HomeScreenState extends State<HomeScreen> {
             label: loc.totalGames,
             value: '${user.totalGamesPlayed}',
             color: AppColors.success,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeroQuickActions(
+    BuildContext context,
+    AppLocalizations loc,
+  ) {
+    const buttonBase = Colors.white;
+    final buttonFill = buttonBase.withValues(alpha: 0.92);
+
+    return Row(
+      children: [
+        Expanded(
+          child: _HeroQuickActionButton(
+            icon: Icons.leaderboard_rounded,
+            label: loc.leaderboardShort,
+            accentColor: AppColors.primary,
+            fillColor: buttonFill,
+            showLabel: false,
+            tooltip: loc.leaderboardShort,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => LeaderboardScreen(
+                    themeManager: widget.themeManager,
+                    languageManager: widget.languageManager,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: StreamBuilder<int>(
+            stream: _unreadMessagesStream,
+            builder: (context, snapshot) {
+              final unread = snapshot.data ?? 0;
+              return _HeroQuickActionButton(
+                icon: Icons.mail_outline_rounded,
+                label: loc.messagesShort,
+                badge: unread,
+                accentColor: AppColors.primary,
+                fillColor: buttonFill,
+                showLabel: false,
+                tooltip: loc.messagesShort,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MessagesScreen(
+                        languageManager: widget.languageManager,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: StreamBuilder<List<FriendRequest>>(
+            stream: _incomingRequestsStream,
+            builder: (context, snapshot) {
+              final pending = snapshot.data?.length ?? 0;
+              return _HeroQuickActionButton(
+                icon: Icons.people_alt_rounded,
+                label: loc.friendsShort,
+                badge: pending,
+                accentColor: AppColors.primary,
+                fillColor: buttonFill,
+                showLabel: false,
+                tooltip: loc.friendsShort,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => FriendsScreen(
+                        themeManager: widget.themeManager,
+                        languageManager: widget.languageManager,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
@@ -467,17 +562,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            const Divider(color: AppColors.backgroundLight, thickness: 1.2),
-            const SizedBox(height: 12),
-            Text(
-              loc.inventory,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.neutral600,
-                  ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -490,129 +575,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.leaderboard_rounded),
-                        label: Text(loc.leaderboardTitle),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(
-                            color: AppColors.primary,
-                            width: 1.4,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => LeaderboardScreen(
-                                themeManager: widget.themeManager,
-                                languageManager: widget.languageManager,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _unreadMessagesStream == null
-                          ? OutlinedButton.icon(
-                              icon: const Icon(Icons.mail_outline_rounded),
-                              label: Text(loc.messagesTitle),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.primary,
-                                side: const BorderSide(
-                                  color: AppColors.primary,
-                                  width: 1.4,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              onPressed: null,
-                            )
-                          : StreamBuilder<int>(
-                              stream: _unreadMessagesStream,
-                              builder: (context, snapshot) {
-                                final unreadCount = snapshot.data ?? 0;
-                                final messagesLabel = unreadCount > 0
-                                    ? '${loc.messagesTitle} ($unreadCount)'
-                                    : loc.messagesTitle;
-
-                                return OutlinedButton.icon(
-                                  icon: const Icon(Icons.mail_outline_rounded),
-                                  label: Text(messagesLabel),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.primary,
-                                    side: const BorderSide(
-                                      color: AppColors.primary,
-                                      width: 1.4,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => MessagesScreen(
-                                          languageManager:
-                                              widget.languageManager,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: StreamBuilder<List<FriendRequest>>(
-                    stream: _incomingRequestsStream,
-                    builder: (context, snapshot) {
-                      final pendingCount = snapshot.data?.length ?? 0;
-                      final friendsLabel = pendingCount > 0
-                          ? '${loc.friendsTitle} ($pendingCount)'
-                          : loc.friendsTitle;
-
-                      return FilledButton.icon(
-                        icon: const Icon(Icons.people_alt_rounded),
-                        label: Text(friendsLabel),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          minimumSize: const Size.fromHeight(52),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => FriendsScreen(
-                                themeManager: widget.themeManager,
-                                languageManager: widget.languageManager,
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
@@ -621,6 +583,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildMissionsSection(AppLocalizations loc) {
     final textTheme = Theme.of(context).textTheme;
+    final bool hasMissions = _missions.isNotEmpty;
 
     return Card(
       elevation: 0,
@@ -631,9 +594,36 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              loc.missionsTitle,
-              style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    loc.missionsTitle,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: hasMissions && !_isLoadingMissions
+                      ? () {
+                          setState(() {
+                            _missionsExpanded = !_missionsExpanded;
+                          });
+                        }
+                      : null,
+                  icon: Icon(
+                    _missionsExpanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                  ),
+                  label: Text(
+                    _missionsExpanded
+                        ? loc.missionsToggleHide
+                        : loc.missionsToggleShow,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             if (_isLoadingMissions)
@@ -644,24 +634,58 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: textTheme.bodyMedium?.copyWith(color: AppColors.neutral500),
               )
             else
-              Column(
-                children: _missions
-                    .map(
-                      (mission) => _MissionTile(
-                        mission: mission,
-                        loc: loc,
-                        rewardLabel: _missionRewardLabel(mission.definition, loc),
-                        onClaim: mission.isCompleted && !mission.isClaimed
-                            ? () => _claimMission(mission)
-                            : null,
-                        isClaiming:
-                            _claimingMissionId == mission.definition.id,
-                      ),
-                    )
-                    .toList(),
+              AnimatedCrossFade(
+                duration: const Duration(milliseconds: 250),
+                sizeCurve: Curves.easeInOut,
+                crossFadeState: _missionsExpanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                firstChild: _buildCollapsedMissionsHint(loc),
+                secondChild: Column(
+                  children: _missions
+                      .map(
+                        (mission) => _MissionTile(
+                          mission: mission,
+                          loc: loc,
+                          rewardLabel:
+                              _missionRewardLabel(mission.definition, loc),
+                          onClaim: mission.isCompleted && !mission.isClaimed
+                              ? () => _claimMission(mission)
+                              : null,
+                          isClaiming:
+                              _claimingMissionId == mission.definition.id,
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildCollapsedMissionsHint(AppLocalizations loc) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.flag_outlined, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              loc.missionsCollapsedHint,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.neutral600,
+                  ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -890,6 +914,198 @@ class _MissionTile extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _HeroQuickActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final int badge;
+  final Color? fillColor;
+  final Color accentColor;
+  final bool showLabel;
+  final String? tooltip;
+
+  const _HeroQuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    required this.accentColor,
+    this.badge = 0,
+    this.fillColor,
+    this.showLabel = true,
+    this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bool showLabel = this.showLabel;
+    final double containerHeight = showLabel ? 48 : 56;
+    final EdgeInsets contentPadding = showLabel
+        ? const EdgeInsets.symmetric(horizontal: 14, vertical: 8)
+        : const EdgeInsets.all(12);
+    final BorderRadius borderRadius =
+        BorderRadius.circular(showLabel ? 14 : 18);
+
+    final Color backgroundColor = fillColor ?? AppColors.surfaceLight;
+    final bool isDarkBackground = backgroundColor.computeLuminance() <
+        (showLabel ? 0.45 : 0.5);
+
+    final Color lightForeground = AppColors.primaryDark;
+    final Color effectiveForeground =
+        isDarkBackground ? Colors.white : lightForeground;
+    final Color iconColorBase =
+        isDarkBackground ? Colors.white : lightForeground;
+
+    final double iconContainerSize = showLabel ? 28 : 40;
+    final double iconSize = showLabel ? 18 : 22;
+    final Color effectiveIconBackground = isDarkBackground
+        ? Colors.white.withValues(alpha: showLabel ? 0.24 : 0.18)
+        : accentColor.withValues(alpha: showLabel ? 0.15 : 0.10);
+
+    final Color badgeBackground = isDarkBackground
+        ? Colors.white
+        : accentColor.withValues(alpha: showLabel ? 0.14 : 0.18);
+    final Color badgeTextColor =
+        isDarkBackground ? accentColor : lightForeground;
+
+    final String tooltipMessage = tooltip ?? label;
+
+    String badgeLabel = '$badge';
+    if (badge >= 100) {
+      badgeLabel = '99+';
+    } else if (badge > 9) {
+      badgeLabel = '9+';
+    }
+
+    Widget buildBadge(EdgeInsets padding) {
+      return Container(
+        padding: padding,
+        decoration: BoxDecoration(
+          color: badgeBackground,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          badgeLabel,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: badgeTextColor,
+            fontWeight: FontWeight.w700,
+            fontSize: 11,
+          ),
+        ),
+      );
+    }
+
+    final Widget buttonContent = showLabel
+        ? Row(
+            children: [
+              Container(
+                width: iconContainerSize,
+                height: iconContainerSize,
+                decoration: BoxDecoration(
+                  color: effectiveIconBackground,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColorBase, size: iconSize),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.center,
+                  child: Text(
+                    label,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: effectiveForeground,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13.5,
+                      letterSpacing: 0.15,
+                    ),
+                  ),
+                ),
+              ),
+              if (badge > 0) ...[
+                const SizedBox(width: 10),
+                buildBadge(
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                ),
+              ],
+            ],
+          )
+        : Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: Container(
+                  width: iconContainerSize,
+                  height: iconContainerSize,
+                  decoration: BoxDecoration(
+                    color: effectiveIconBackground,
+                    borderRadius:
+                        BorderRadius.circular(iconContainerSize / 2),
+                  ),
+                  child: Icon(icon, color: iconColorBase, size: iconSize),
+                ),
+              ),
+              if (badge > 0)
+                Positioned(
+                  top: -2,
+                  right: -2,
+                  child: buildBadge(
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  ),
+                ),
+            ],
+          );
+
+    final Widget button = Container(
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        boxShadow: [
+          BoxShadow(
+            color: accentColor.withValues(alpha: 0.12),
+            blurRadius: showLabel ? 18 : 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: borderRadius,
+        child: InkWell(
+          borderRadius: borderRadius,
+          onTap: onTap,
+          child: Ink(
+            height: containerHeight,
+            decoration: BoxDecoration(
+              borderRadius: borderRadius,
+              color: backgroundColor,
+              border: Border.all(
+                color: accentColor.withValues(alpha: showLabel ? 0.28 : 0.32),
+                width: 1.1,
+              ),
+            ),
+            child: Padding(
+              padding: contentPadding,
+              child: buttonContent,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return Tooltip(
+      message: tooltipMessage,
+      waitDuration: const Duration(milliseconds: 400),
+      child: Semantics(
+        button: true,
+        label: tooltipMessage,
+        child: button,
       ),
     );
   }

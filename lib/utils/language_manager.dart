@@ -108,12 +108,20 @@ class AppLocalizations {
   String languageQuestionCount(int count) =>
       _isTr ? '$count Soru' : '$count Questions';
   String get missionsTitle => _isTr ? 'Görevler' : 'Missions';
+  String get missionsToggleShow =>
+      _isTr ? 'Görevleri aç' : 'Show missions';
+  String get missionsToggleHide =>
+      _isTr ? 'Gizle' : 'Hide';
+  String get missionsCollapsedHint => _isTr
+      ? 'Günlük ve haftalık görevlerini görmek için aç.'
+      : 'Open to see your daily and weekly missions.';
   String get noMissions =>
       _isTr ? 'Görev bulunamadı.' : 'No missions available yet.';
   String get missionDaily => _isTr ? 'Günlük' : 'Daily';
   String get missionWeekly => _isTr ? 'Haftalık' : 'Weekly';
   String missionRewardXp(int value) => '+$value XP';
-  String missionRewardPass(int value) => _isTr ? '+$value Pas' : '+$value Pass';
+  String missionRewardPass(int value) =>
+      _isTr ? '+$value Pas' : '+$value Pass';
   String get inventory => _isTr ? 'Envanter' : 'Inventory';
   String get passesLabel => _isTr ? 'Pas' : 'Passes';
   String get missionClaim => _isTr ? 'Ödülü Al' : 'Claim Reward';
@@ -127,6 +135,7 @@ class AppLocalizations {
       ? 'Pas hakkı kullanılamadı. Lütfen tekrar deneyin.'
       : 'Unable to use pass. Please try again.';
   String get friendsTitle => _isTr ? 'Arkadaşlar' : 'Friends';
+  String get friendsShort => _isTr ? 'Arkadaş' : 'Friends';
   String get friendsTab => _isTr ? 'Arkadaşlar' : 'Friends';
   String get requestsTab => _isTr ? 'İstekler' : 'Requests';
   String get friendSearchLabel => _isTr ? 'Kullanıcı adı' : 'Username';
@@ -173,6 +182,7 @@ class AppLocalizations {
       ? 'Çevrim içi durum tercihi güncellendi'
       : 'Online status preference updated';
   String get messagesTitle => _isTr ? 'Mesajlar' : 'Messages';
+  String get messagesShort => _isTr ? 'Mesaj' : 'Inbox';
   String get messagesInbox => _isTr ? 'Gelen Kutusu' : 'Inbox';
   String get messagesEmpty =>
       _isTr ? 'Henüz mesajın yok.' : 'You have no messages yet.';
@@ -265,6 +275,7 @@ class AppLocalizations {
   String get achievementsUnlocked =>
       _isTr ? 'Yeni başarımlar açıldı!' : 'New achievements unlocked!';
   String get leaderboardTitle => _isTr ? 'Liderlik Tablosu' : 'Leaderboard';
+  String get leaderboardShort => _isTr ? 'Liderlik' : 'Leaders';
   String get leaderboardGlobal => _isTr ? 'Genel' : 'Global';
   String get leaderboardLanguage => _isTr ? 'Dil' : 'Language';
   String get leaderboardMyRank => _isTr ? 'Sıram' : 'My Rank';
